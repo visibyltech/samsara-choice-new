@@ -81,6 +81,7 @@ app.get('/api/health', (_req, res) => {
 // Public gateway & service availability status (never returns secret keys)
 app.get('/api/config/gateways', (_req, res) => {
   res.json({
+    korapayConfigured: Boolean(process.env.KORAPAY_SECRET_KEY),
     paystackConfigured: Boolean(process.env.PAYSTACK_SECRET_KEY),
     paystackPublicKey: process.env.PAYSTACK_PUBLIC_KEY || '',
     flutterwaveConfigured: Boolean(process.env.FLUTTERWAVE_SECRET_KEY),
@@ -118,6 +119,63 @@ app.post('/api/payments/initialize', async (req, res) => {
   }
 
   try {
+    if (gateway === 'korapay') {
+      const secret = process.env.KORAPAY_SECRET_KEY;
+      if (!secret) {
+        res.json({
+          configured: false,
+          gateway: 'korapay',
+          message: 'KORAPAY_SECRET_KEY is not configured in Vercel environment variables.',
+        });
+        return;
+      }
+
+      const appUrl = typeof callbackUrl === 'string' && callbackUrl.startsWith('https://')
+        ? callbackUrl
+        : process.env.APP_URL || 'https://samsara-choice-new.vercel.app';
+      const redirect = new URL(appUrl);
+      redirect.searchParams.set('reference', reference);
+      redirect.searchParams.set('gateway', 'korapay');
+
+      const koraResp = await fetch('https://api.korapay.com/merchant/api/v1/charges/initialize', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${secret}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: Math.round(amount * 100) / 100,
+          currency: currency === 'AUD' ? 'AUD' : 'NGN',
+          reference,
+          redirect_url: redirect.toString(),
+          notification_url: `${appUrl.replace(/\/$/, '')}/api/payments/korapay/webhook`,
+          narration: `Samsara Choice order ${orderNumber || reference}`,
+          merchant_bears_cost: false,
+          customer: {
+            name: caller.displayName || caller.email,
+            email: caller.email,
+          },
+          metadata: { orderNumber: String(orderNumber || reference).slice(0, 20), userId: caller.uid.slice(0, 20) },
+        }),
+      });
+      const koraJson = await koraResp.json() as {
+        status?: boolean;
+        message?: string;
+        data?: { reference?: string; checkout_url?: string };
+      };
+      if (!koraResp.ok || !koraJson.status || !koraJson.data?.checkout_url) {
+        res.status(502).json({ error: koraJson.message || 'Korapay checkout initialization failed.' });
+        return;
+      }
+      res.json({
+        configured: true,
+        gateway: 'korapay',
+        authorizationUrl: koraJson.data.checkout_url,
+        reference: koraJson.data.reference || reference,
+      });
+      return;
+    }
+
     if (gateway === 'paystack') {
       const secret = process.env.PAYSTACK_SECRET_KEY;
       if (!secret) {
@@ -277,6 +335,38 @@ app.post('/api/payments/verify', async (req, res) => {
   }
 
   try {
+    if (gateway === 'korapay') {
+      const secret = process.env.KORAPAY_SECRET_KEY;
+      if (!secret) {
+        res.status(503).json({ verified: false, error: 'Korapay secret key is not configured.' });
+        return;
+      }
+      const resp = await fetch(
+        `https://api.korapay.com/merchant/api/v1/charges/${encodeURIComponent(reference)}`,
+        { headers: { Authorization: `Bearer ${secret}` } }
+      );
+      const data = await resp.json() as {
+        status?: boolean;
+        data?: { reference?: string; status?: string; amount?: string | number; amount_paid?: string | number; currency?: string };
+      };
+      const paidAmount = Number(data.data?.amount_paid ?? data.data?.amount);
+      const isPaid = Boolean(
+        resp.ok &&
+        data.status &&
+        data.data?.status === 'success' &&
+        Number.isFinite(paidAmount) &&
+        paidAmount > 0
+      );
+      res.json({
+        verified: isPaid,
+        gateway: 'korapay',
+        reference: data.data?.reference || reference,
+        amount: Number.isFinite(paidAmount) ? paidAmount : undefined,
+        currency: data.data?.currency,
+      });
+      return;
+    }
+
     if (gateway === 'paystack') {
       const secret = process.env.PAYSTACK_SECRET_KEY;
       if (!secret) {
@@ -345,6 +435,26 @@ app.post('/api/payments/verify', async (req, res) => {
   } catch (err) {
     res.status(500).json({ verified: false, error: err instanceof Error ? err.message : 'Verification error.' });
   }
+});
+
+// Korapay signed webhook endpoint. Browser return verification remains server-to-server.
+app.post('/api/payments/korapay/webhook', (req, res) => {
+  const secret = process.env.KORAPAY_SECRET_KEY;
+  const signature = req.headers['x-korapay-signature'];
+  if (!secret || typeof signature !== 'string' || !req.body?.data) {
+    res.status(401).json({ received: false });
+    return;
+  }
+  const expected = crypto.createHmac('sha256', secret).update(JSON.stringify(req.body.data)).digest('hex');
+  const expectedBuffer = Buffer.from(expected, 'hex');
+  const receivedBuffer = Buffer.from(signature, 'hex');
+  const valid = expectedBuffer.length === receivedBuffer.length &&
+    crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+  if (!valid) {
+    res.status(401).json({ received: false });
+    return;
+  }
+  res.status(200).json({ received: true });
 });
 
 // Cloudinary image upload (Admin only)
