@@ -1,6 +1,6 @@
 export type Market = 'NG' | 'AU';
 export type Currency = 'NGN' | 'AUD';
-export type InstalmentFrequency = 'weekly' | 'biweekly' | 'monthly';
+export type InstalmentFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 export type PaymentMode = 'buy_now' | 'pay_small_small' | 'subscription';
 export type PaymentGateway = 'korapay' | 'paystack' | 'stripe' | 'flutterwave' | 'bank_transfer' | 'payid';
 
@@ -194,6 +194,7 @@ export interface PaymentPlan {
   totalInstalments: number;
   paidInstalments: number;
   instalmentAmount: number;
+  dailyPaymentAmount?: number;
   nextPaymentDate: string;
   releaseThresholdPercent: number;
   status: 'pending_deposit' | 'active' | 'overdue' | 'completed' | 'cancelled';
