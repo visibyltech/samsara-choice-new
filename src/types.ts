@@ -2,7 +2,7 @@ export type Market = 'NG' | 'AU';
 export type Currency = 'NGN' | 'AUD';
 export type InstalmentFrequency = 'weekly' | 'biweekly' | 'monthly';
 export type PaymentMode = 'buy_now' | 'pay_small_small' | 'subscription';
-export type PaymentGateway = 'paystack' | 'stripe' | 'flutterwave' | 'bank_transfer' | 'payid';
+export type PaymentGateway = 'korapay' | 'paystack' | 'stripe' | 'flutterwave' | 'bank_transfer' | 'payid';
 
 export interface StoreSettings {
   ngnPerAud: number;
@@ -268,6 +268,7 @@ export interface AppNotification {
 }
 
 export interface GatewayConfigStatus {
+  korapayConfigured: boolean;
   paystackConfigured: boolean;
   paystackPublicKey: string;
   flutterwaveConfigured: boolean;
