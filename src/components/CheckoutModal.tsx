@@ -16,6 +16,7 @@ interface CheckoutModalProps {
   onOrderComplete: () => void;
   initialPaymentMode?: PaymentMode;
   initialDailyPaymentAmount?: number;
+  initialDepositPercent?: number;
 }
 
 export function CheckoutModal({
@@ -25,6 +26,7 @@ export function CheckoutModal({
   onOrderComplete,
   initialPaymentMode = 'buy_now',
   initialDailyPaymentAmount,
+  initialDepositPercent,
 }: CheckoutModalProps) {
   const {
     user,
@@ -76,13 +78,14 @@ export function CheckoutModal({
   useEffect(() => {
     if (!open) return;
     setPaymentMode(initialPaymentMode === 'pay_small_small' && canUsePaySmallSmall ? 'pay_small_small' : initialPaymentMode);
+    setPssDepositPct(initialDepositPercent || settings.pssDefaultDepositPercent);
     if (initialDailyPaymentAmount) {
       setPssFrequency('daily');
       setPssDailyPaymentAmount(initialDailyPaymentAmount);
     } else {
       setPssFrequency('weekly');
     }
-  }, [open, initialPaymentMode, initialDailyPaymentAmount, canUsePaySmallSmall]);
+  }, [open, initialPaymentMode, initialDailyPaymentAmount, initialDepositPercent, canUsePaySmallSmall, settings.pssDefaultDepositPercent]);
 
   const [manualRef, setManualRef] = useState('');
   const [submitting, setSubmitting] = useState(false);
