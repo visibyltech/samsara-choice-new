@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRight, Heart, Search, ShoppingBag, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { ArrowRight, Heart, Search, ShoppingBag, SlidersHorizontal } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product } from '../types';
 import { formatMoney, getComparePrice, getProductPrice } from '../utils/currency';
