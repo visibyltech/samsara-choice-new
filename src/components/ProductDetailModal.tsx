@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Heart, Minus, Plus, ShoppingBag, Star, X } from 'lucide-react';
+import { Check, CreditCard, Heart, Minus, Plus, ShoppingBag, Star, X, CalendarClock } from 'lucide-react';
 import {
   collection,
   doc,
@@ -12,7 +12,7 @@ import {
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useStore } from '../context/StoreContext';
 import { Product, ProductReview } from '../types';
-import { calculatePaySmallSmall, formatMoney, formatShortDate, getProductPrice } from '../utils/currency';
+import { formatMoney, formatShortDate, getProductPrice } from '../utils/currency';
 import { ProductImage } from './ProductImage';
 
 interface ProductDetailModalProps {
@@ -20,6 +20,7 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onSelectProduct: (p: Product) => void;
   onOpenAuth: () => void;
+  onCheckout: (mode: 'buy_now' | 'pay_small_small', dailyAmount?: number) => void;
 }
 
 export function ProductDetailModal({
@@ -27,6 +28,7 @@ export function ProductDetailModal({
   onClose,
   onSelectProduct,
   onOpenAuth,
+  onCheckout,
 }: ProductDetailModalProps) {
   const {
     user,
@@ -47,12 +49,16 @@ export function ProductDetailModal({
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [showPssPlans, setShowPssPlans] = useState(false);
+  const [selectedDailyAmount, setSelectedDailyAmount] = useState(market === 'NG' ? 500 : 5);
 
   useEffect(() => {
     if (!product) return;
     setActiveImage(0);
     setSelectedVariant(product.variants?.[0] || product.unit || 'Standard');
     setQuantity(1);
+    setShowPssPlans(false);
+    setSelectedDailyAmount(market === 'NG' ? 500 : 5);
 
     const q = query(
       collection(db, 'products', product.id, 'reviews'),
@@ -71,7 +77,6 @@ export function ProductDetailModal({
   const unitPrice = getProductPrice(product, market, settings);
   const lineTotal = unitPrice * quantity;
   const depositPct = product.pssMinDepositPercent || settings.pssDefaultDepositPercent;
-  const pssPreview = calculatePaySmallSmall(lineTotal, depositPct, 'weekly', 3, currency);
   const relatedProducts = products
     .filter((p) => p.categoryId === product.categoryId && p.id !== product.id)
     .slice(0, 3);
@@ -110,9 +115,9 @@ export function ProductDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/65 overflow-y-auto p-3 sm:p-6">
-      <div className="max-w-5xl mx-auto bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xl my-4">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+    <div className="fixed inset-0 z-50 bg-slate-950/65 overflow-y-auto p-2 sm:p-5">
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xl my-2 sm:my-4">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-200">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             {product.subcategory} {product.sku ? `· SKU: ${product.sku}` : ''}
           </p>
@@ -126,10 +131,10 @@ export function ProductDetailModal({
           </button>
         </div>
 
-        <div className="p-6 sm:p-8 grid lg:grid-cols-12 gap-8">
+        <div className="p-4 sm:p-6 grid lg:grid-cols-12 gap-5 sm:gap-7">
           {/* Gallery */}
           <div className="lg:col-span-6 space-y-3">
-            <div className="aspect-square sm:aspect-[4/3] rounded-xl overflow-hidden bg-white border border-slate-200 p-4">
+            <div className="h-[250px] sm:h-auto sm:aspect-[4/3] lg:aspect-square lg:max-h-[430px] rounded-xl overflow-hidden bg-white border border-slate-200 p-3 sm:p-4">
               <ProductImage
                 src={product.images[activeImage] || product.images[0]}
                 alt={product.name}
@@ -155,9 +160,9 @@ export function ProductDetailModal({
           </div>
 
           {/* Purchase Module */}
-          <div className="lg:col-span-6 flex flex-col justify-between space-y-5">
+          <div className="lg:col-span-6 flex flex-col justify-between space-y-4">
             <div>
-              <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-slate-900 mb-2">
                 {product.name}
               </h2>
               <div className="flex items-center gap-3 text-xs text-slate-500 mb-4">
@@ -169,11 +174,11 @@ export function ProductDetailModal({
                 <span>{product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}</span>
               </div>
 
-              <div className="font-mono text-3xl font-bold text-slate-900 tabular-nums mb-4">
+              <div className="font-mono text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums mb-3">
                 {formatMoney(unitPrice, currency)}
               </div>
 
-              <p className="text-sm text-slate-600 leading-relaxed mb-5">{product.description}</p>
+              <p className="text-sm text-slate-600 leading-relaxed mb-4 line-clamp-4">{product.description}</p>
 
               {product.bundleItems && product.bundleItems.length > 0 && (
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5">
@@ -211,84 +216,62 @@ export function ProductDetailModal({
                 </div>
               )}
 
-              {product.pssEligible && (
-                <div className="bg-red-50/60 border border-red-200 rounded-xl p-4 mb-5">
-                  <p className="text-xs font-bold text-[#D61A1E] mb-1">
-                    Pay Small Small Eligible ({depositPct}% Initial Deposit)
-                  </p>
-                  <p className="text-xs text-slate-700">
-                    Start today with{' '}
-                    <span className="font-mono font-bold tabular-nums">
-                      {formatMoney(pssPreview.depositAmount, currency)}
-                    </span>{' '}
-                    and split the remaining{' '}
-                    <span className="font-mono font-semibold tabular-nums">
-                      {formatMoney(pssPreview.remainingBalance, currency)}
-                    </span>{' '}
-                    into 3 weekly payments of{' '}
-                    <span className="font-mono font-semibold tabular-nums">
-                      {formatMoney(pssPreview.instalmentAmount, currency)}
-                    </span>
-                    . Choose Pay Small Small or Buy &amp; Pay Now at checkout.
-                  </p>
-                </div>
-              )}
+}
             </div>
 
-            <div className="space-y-3 pt-2 border-t border-slate-200">
-              <div className="flex items-center gap-3">
+            <div className="space-y-3 pt-3 border-t border-slate-200">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-semibold text-slate-600">Quantity</span>
                 <div className="inline-flex items-center border border-slate-300 rounded-lg">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    aria-label="Decrease quantity"
-                    className="p-3 text-slate-700 hover:bg-slate-100"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-10 text-center font-mono text-sm font-bold tabular-nums">
-                    {quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity((q) => Math.min(99, q + 1))}
-                    aria-label="Increase quantity"
-                    className="p-3 text-slate-700 hover:bg-slate-100"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
+                  <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="Decrease quantity" className="p-2.5 text-slate-700 hover:bg-slate-100"><Minus className="w-4 h-4" /></button>
+                  <span className="w-9 text-center font-mono text-sm font-bold tabular-nums">{quantity}</span>
+                  <button type="button" onClick={() => setQuantity((q) => Math.min(99, q + 1))} aria-label="Increase quantity" className="p-2.5 text-slate-700 hover:bg-slate-100"><Plus className="w-4 h-4" /></button>
                 </div>
-
-                <button
-                  type="button"
-                  disabled={product.stock <= 0}
-                  onClick={async () => {
-                    await addToCart(product, quantity, selectedVariant);
-                    onClose();
-                  }}
-                  className="flex-1 py-3 px-5 bg-[#D61A1E] hover:bg-[#B51418] disabled:bg-slate-300 text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 min-h-[46px]"
-                >
-                  <ShoppingBag className="w-4 h-4" />
-                  <span>Add to Bag · {formatMoney(lineTotal, currency)}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => toggleWishlist(product.id)}
-                  aria-label="Wishlist"
-                  className="p-3 border border-slate-300 rounded-lg hover:bg-slate-50"
-                >
-                  <Heart
-                    className={`w-5 h-5 ${isWishlisted ? 'fill-[#D61A1E] text-[#D61A1E]' : 'text-slate-600'}`}
-                  />
+                <button type="button" onClick={() => toggleWishlist(product.id)} aria-label="Wishlist" className="p-2.5 border border-slate-300 rounded-lg hover:bg-slate-50">
+                  <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-[#D61A1E] text-[#D61A1E]' : 'text-slate-600'}`} />
                 </button>
               </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" disabled={product.stock <= 0} onClick={async () => { await addToCart(product, quantity, selectedVariant); onClose(); }} className="min-w-0 py-3 px-2 sm:px-3 bg-[#D61A1E] hover:bg-[#B51418] disabled:bg-slate-300 text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5">
+                  <ShoppingBag className="w-4 h-4 shrink-0" /><span>Add to Bag</span>
+                </button>
+                <button type="button" disabled={product.stock <= 0} onClick={async () => { await addToCart(product, quantity, selectedVariant); onClose(); onCheckout('buy_now'); }} className="min-w-0 py-3 px-2 sm:px-3 bg-[#0B2D71] hover:bg-[#082257] disabled:bg-slate-300 text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5">
+                  <CreditCard className="w-4 h-4 shrink-0" /><span>Checkout</span>
+                </button>
+              </div>
+
+              {product.pssEligible && (
+                <div className="space-y-3">
+                  <button type="button" onClick={() => setShowPssPlans((v) => !v)} className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-[#D61A1E]/40 bg-red-50/60 px-3 py-2 text-xs font-bold text-[#D61A1E] hover:bg-red-50">
+                    <CalendarClock className="w-4 h-4" /> {showPssPlans ? 'Hide Pay Small Small plans' : 'Pay Small Small · Choose a daily plan'}
+                  </button>
+                  {showPssPlans && (
+                    <div className="rounded-xl border border-red-200 bg-red-50/50 p-3 space-y-3">
+                      <div>
+                        <p className="text-xs font-bold text-slate-900">Choose your daily payment</p>
+                        <p className="text-[11px] text-slate-600 mt-0.5">Pay the initial {depositPct}% deposit, then pay a fixed amount each day until the balance is cleared.</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(market === 'NG' ? [500, 1000] : [5, 10]).map((amount) => (
+                          <button key={amount} type="button" onClick={() => setSelectedDailyAmount(amount)} className={`rounded-lg border px-3 py-2.5 text-xs font-bold ${selectedDailyAmount === amount ? 'border-[#D61A1E] bg-white text-[#D61A1E] ring-1 ring-[#D61A1E]' : 'border-slate-200 bg-white text-slate-700'}`}>
+                            {formatMoney(amount, currency)} / day
+                          </button>
+                        ))}
+                      </div>
+                      <button type="button" disabled={product.stock <= 0} onClick={async () => { await addToCart(product, quantity, selectedVariant); onClose(); onCheckout('pay_small_small', selectedDailyAmount); }} className="w-full rounded-lg bg-[#D61A1E] px-3 py-3 text-xs font-bold text-white hover:bg-[#B51418] disabled:bg-slate-300">
+                        Continue with {formatMoney(selectedDailyAmount, currency)} daily
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Reviews & Related Products */}
-        <div className="px-6 sm:px-8 pb-8 pt-6 border-t border-slate-200 bg-slate-50 grid lg:grid-cols-12 gap-8">
+        <div className="px-4 sm:px-6 pb-6 pt-5 border-t border-slate-200 bg-slate-50 grid lg:grid-cols-12 gap-6">
           <div className="lg:col-span-7 space-y-4">
             <h3 className="font-display text-lg font-bold text-slate-900">Customer Reviews</h3>
             <form onSubmit={handleSubmitReview} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
