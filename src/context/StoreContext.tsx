@@ -222,6 +222,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, [toast]);
 
+  useEffect(() => {
+    if (!user && cart.length > 0 && typeof window !== 'undefined') {
+      window.localStorage.setItem('samsara_guest_cart', JSON.stringify(cart));
+    }
+  }, [cart, user]);
+
   const currency = getCurrencyForMarket(market);
   const isAdmin = Boolean(
     user?.emailVerified &&
@@ -330,13 +336,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Auto-create user profile & sync guest cart when signed in
+  // Auto-create user profile, migrate the guest bag, then attach account-scoped listeners.
   useEffect(() => {
     if (!authReady || !user) return;
     const uid = user.uid;
     const userRef = doc(db, 'users', uid);
+    let cancelled = false;
+    let unsubUser = () => {};
+    let unsubCart = () => {};
 
-    const ensureProfile = async () => {
+    const connectAccount = async () => {
       try {
         const snap = await getDoc(userRef);
         if (!snap.exists()) {
@@ -356,29 +365,51 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `users/${uid}`);
       }
-    };
-    ensureProfile();
+      if (cancelled) return;
 
-    const unsubUser = onSnapshot(
-      userRef,
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data() as UserProfile;
-          setUserProfile(data);
+      // Preserve items added before sign-in instead of replacing the guest bag with an empty account bag.
+      try {
+        const rawGuestCart = window.localStorage.getItem('samsara_guest_cart');
+        if (rawGuestCart) {
+          const guestItems = JSON.parse(rawGuestCart) as CartItem[];
+          if (Array.isArray(guestItems) && guestItems.length) {
+            const cartRef = collection(db, 'users', uid, 'cart');
+            const remoteSnap = await getDocs(cartRef);
+            const remoteById = new Map(remoteSnap.docs.map((d) => [d.id, d.data() as CartItem]));
+            const writes = guestItems.filter((item) => item && item.id && item.productId).map((item) => {
+              const remote = remoteById.get(item.id);
+              return setDoc(doc(db, 'users', uid, 'cart', item.id), {
+                ...item,
+                quantity: Math.min(999, (remote?.quantity || 0) + item.quantity),
+                updatedAt: serverTimestamp(),
+              });
+            });
+            await Promise.all(writes);
+          }
+          window.localStorage.removeItem('samsara_guest_cart');
         }
-      },
-      (err) => handleFirestoreError(err, OperationType.GET, `users/${uid}`)
-    );
+      } catch {
+        // Keep the guest cart in local storage if migration cannot complete.
+      }
+      if (cancelled) return;
 
-    const unsubCart = onSnapshot(
-      collection(db, 'users', uid, 'cart'),
-      (snap) => {
-        setCart(snap.docs.map((d) => d.data() as CartItem));
-      },
-      (err) => handleFirestoreError(err, OperationType.LIST, `users/${uid}/cart`)
-    );
+      unsubUser = onSnapshot(
+        userRef,
+        (snap) => {
+          if (snap.exists()) setUserProfile(snap.data() as UserProfile);
+        },
+        (err) => handleFirestoreError(err, OperationType.GET, `users/${uid}`)
+      );
+      unsubCart = onSnapshot(
+        collection(db, 'users', uid, 'cart'),
+        (snap) => setCart(snap.docs.map((d) => d.data() as CartItem)),
+        (err) => handleFirestoreError(err, OperationType.LIST, `users/${uid}/cart`)
+      );
+    };
 
+    connectAccount();
     return () => {
+      cancelled = true;
       unsubUser();
       unsubCart();
     };
