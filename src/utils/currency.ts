@@ -49,6 +49,7 @@ export function addDaysISO(baseDate: Date, days: number): string {
 }
 
 export function frequencyToDays(frequency: InstalmentFrequency): number {
+  if (frequency === 'daily') return 1;
   if (frequency === 'weekly') return 7;
   if (frequency === 'biweekly') return 14;
   return 30;
@@ -93,7 +94,8 @@ export function calculatePaySmallSmall(
   frequency: InstalmentFrequency,
   instalmentCount: number,
   currency: Currency,
-  startDate: Date = new Date()
+  startDate: Date = new Date(),
+  fixedInstalmentAmount?: number
 ): PaySmallSmallBreakdown {
   const safeTotal = Math.max(0, totalAmount);
   const clampedDepositPct = Math.min(90, Math.max(10, depositPercent));
@@ -104,7 +106,7 @@ export function calculatePaySmallSmall(
     currency === 'NGN'
       ? Math.max(0, Math.round(safeTotal - depositAmount))
       : Math.max(0, Math.round((safeTotal - depositAmount) * 100) / 100);
-  const count = Math.max(1, Math.min(12, instalmentCount));
+  const count = Math.max(1, Math.min(frequency === 'daily' ? 365 : 12, instalmentCount));
   const stepDays = frequencyToDays(frequency);
   const baseInstalment =
     currency === 'NGN'
@@ -115,11 +117,17 @@ export function calculatePaySmallSmall(
   let allocated = 0;
   for (let i = 1; i <= count; i++) {
     const isLast = i === count;
-    const amt = isLast
-      ? currency === 'NGN'
-        ? Math.round(remainingBalance - allocated)
-        : Math.round((remainingBalance - allocated) * 100) / 100
-      : baseInstalment;
+    const amt = fixedInstalmentAmount && frequency === 'daily'
+      ? (isLast
+          ? currency === 'NGN'
+            ? Math.round(remainingBalance - allocated)
+            : Math.round((remainingBalance - allocated) * 100) / 100
+          : Math.min(fixedInstalmentAmount, Math.max(0, remainingBalance - allocated)))
+      : isLast
+        ? currency === 'NGN'
+          ? Math.round(remainingBalance - allocated)
+          : Math.round((remainingBalance - allocated) * 100) / 100
+        : baseInstalment;
     allocated += amt;
     schedule.push({
       index: i,
