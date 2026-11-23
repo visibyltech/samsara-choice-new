@@ -23,6 +23,7 @@ function StorefrontApp() {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [shopCategory, setShopCategory] = useState('all');
 
   // Handle gateway callback query params (e.g. Stripe / Paystack return URL)
   useEffect(() => {
@@ -53,6 +54,12 @@ function StorefrontApp() {
     }
   }, [user]);
 
+  const handleOpenShop = (categoryId = 'all') => {
+    setShopCategory(categoryId);
+    setActiveView('shop');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleNavigate = (view: ActiveView, sectionId?: string) => {
     setActiveView(view);
     if (view === 'storefront' && sectionId) {
@@ -78,16 +85,20 @@ function StorefrontApp() {
           <>
             <HeroSection
               onExplorePaySmallSmall={() => handleNavigate('storefront', 'pay-small-small')}
-              onExploreCatalog={() => handleNavigate('storefront', 'catalog')}
+              onExploreCatalog={() => handleOpenShop()}
               onExploreSubscriptions={() => handleNavigate('storefront', 'subscriptions')}
             />
-            <CatalogSection onSelectProduct={(p) => setSelectedProduct(p)} />
+            <CatalogSection featuredOnly onOpenShop={handleOpenShop} onSelectProduct={(p) => setSelectedProduct(p)} />
             <PaySmallSmallShowcase onSelectProduct={(p) => setSelectedProduct(p)} />
             <SubscriptionsShowcase
               onRequireAuth={() => setAuthOpen(true)}
               onSuccessNavigateAccount={() => handleNavigate('account')}
             />
           </>
+        )}
+
+        {activeView === 'shop' && (
+          <CatalogSection key={shopCategory} initialCategory={shopCategory} onOpenShop={handleOpenShop} onSelectProduct={(p) => setSelectedProduct(p)} />
         )}
 
         {activeView === 'account' && (
