@@ -73,6 +73,18 @@ export function CheckoutModal({
     setPaymentMethod(market === 'NG' ? 'korapay' : 'stripe');
     setPssDailyPaymentAmount(market === 'NG' ? 500 : 5);
   }, [market]);
+
+  useEffect(() => {
+    if (!open) return;
+    setPaymentMode(initialPaymentMode === 'pay_small_small' && canUsePaySmallSmall ? 'pay_small_small' : initialPaymentMode);
+    if (initialDailyPaymentAmount) {
+      setPssFrequency('daily');
+      setPssDailyPaymentAmount(initialDailyPaymentAmount);
+    } else {
+      setPssFrequency('weekly');
+    }
+  }, [open, initialPaymentMode, initialDailyPaymentAmount, canUsePaySmallSmall]);
+
   const [manualRef, setManualRef] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -110,17 +122,6 @@ export function CheckoutModal({
 
   const amountDueNow =
     effectiveMode === 'pay_small_small' ? pssBreakdown.depositAmount : grandTotal;
-
-  useEffect(() => {
-    if (!open) return;
-    setPaymentMode(initialPaymentMode === 'pay_small_small' && canUsePaySmallSmall ? 'pay_small_small' : initialPaymentMode);
-    if (initialDailyPaymentAmount) {
-      setPssFrequency('daily');
-      setPssDailyPaymentAmount(initialDailyPaymentAmount);
-    } else {
-      setPssFrequency('weekly');
-    }
-  }, [open, initialPaymentMode, initialDailyPaymentAmount, canUsePaySmallSmall]);
 
   const activeShippingAddress: Address =
     selectedAddressId !== 'new'
