@@ -277,22 +277,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     const unsubCategories = onSnapshot(
       query(collection(db, 'categories'), orderBy('sortOrder', 'asc')),
-      (snap) => {
-        if (!snap.empty) {
-          setCategories(snap.docs.map((d) => d.data() as Category));
-        }
+      () => {
+        // Keep the Samsara Choice storefront departments canonical. Old Firestore
+        // records from another store must never replace this store's categories.
+        setCategories(INITIAL_CATEGORIES);
       },
-      () => {}
+      () => setCategories(INITIAL_CATEGORIES)
     );
 
     const unsubProducts = onSnapshot(
       collection(db, 'products'),
       (snap) => {
-        if (!snap.empty) {
-          setProducts(snap.docs.map((d) => d.data() as Product));
-        }
+        // Keep the imported Samsara catalog as the base. Only accept matching
+        // imported IDs or products created through this app's admin dashboard.
+        const importedIds = new Set(INITIAL_PRODUCTS.map((product) => product.id));
+        const remoteProducts = snap.docs
+          .map((d) => ({ ...(d.data() as Product), id: d.id }))
+          .filter((product) => importedIds.has(product.id) || product.id.startsWith('prod-'));
+        const remoteById = new Map(remoteProducts.map((product) => [product.id, product]));
+        const importedCatalog = INITIAL_PRODUCTS.map((product) => ({
+          ...product,
+          ...(remoteById.get(product.id) || {}),
+        }));
+        const adminProducts = remoteProducts.filter((product) => !importedIds.has(product.id));
+        setProducts([...importedCatalog, ...adminProducts]);
       },
-      () => {}
+      () => setProducts(INITIAL_PRODUCTS)
     );
 
     const unsubPackages = onSnapshot(
@@ -464,7 +474,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
       }
       for (const d of existingProds.docs) {
-        if (d.id.startsWith('prod-') && !validProdIds.has(d.id)) {
+        if (!validProdIds.has(d.id) && !d.id.startsWith('prod-')) {
           batch.delete(d.ref);
         }
       }
