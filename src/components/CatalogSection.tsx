@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bean, Carrot, Cookie, CookingPot, CupSoda, Drumstick, Fish, Footprints, Gift, Heart, Package, Search, Shirt, ShoppingBag, SlidersHorizontal, Snowflake, Soup, Sparkles, Wheat } from 'lucide-react';
+import { ArrowRight, Heart, Search, ShoppingBag, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product } from '../types';
 import { formatMoney, getComparePrice, getProductPrice } from '../utils/currency';
@@ -7,11 +7,14 @@ import { ProductImage } from './ProductImage';
 
 interface CatalogSectionProps {
   onSelectProduct: (product: Product) => void;
+  featuredOnly?: boolean;
+  initialCategory?: string;
+  onOpenShop?: (categoryId?: string) => void;
 }
 
 type SortOption = 'featured' | 'bestsellers' | 'price_asc' | 'price_desc';
 
-export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
+export function CatalogSection({ onSelectProduct, featuredOnly = false, initialCategory = 'all', onOpenShop }: CatalogSectionProps) {
   const {
     categories,
     products,
@@ -23,7 +26,7 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
     toggleWishlist,
   } = useStore();
 
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [pssOnly, setPssOnly] = useState(false);
@@ -35,6 +38,7 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
     const q = searchQuery.trim().toLowerCase();
     const list = products.filter((p) => {
       if (p.markets && !p.markets.includes(market)) return false;
+      if (featuredOnly && !p.featured) return false;
       if (selectedCategory !== 'all' && p.categoryId !== selectedCategory) return false;
       if (selectedSubcategory !== 'all' && p.subcategory !== selectedSubcategory) return false;
       if (pssOnly && !p.pssEligible) return false;
@@ -53,7 +57,7 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
         return getProductPrice(b, market, settings) - getProductPrice(a, market, settings);
       return Number(Boolean(b.featured)) - Number(Boolean(a.featured));
     });
-  }, [products, market, selectedCategory, selectedSubcategory, pssOnly, searchQuery, sortBy, settings]);
+  }, [products, market, selectedCategory, selectedSubcategory, pssOnly, searchQuery, sortBy, settings, featuredOnly]);
 
   const wishlistSet = new Set(userProfile?.wishlist || []);
 
@@ -66,71 +70,60 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
               Samsara Choice Storefront · Nigeria &amp; Australia
             </p>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              Shop Our Store
+              {featuredOnly ? 'Featured Products' : 'Shop All Products'}
             </h2>
           </div>
-          <p className="text-xs sm:text-sm text-slate-600 tabular-nums">
-            {filteredProducts.length} products in {currency} ({market === 'NG' ? 'Nigeria' : 'Australia'})
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-xs sm:text-sm text-slate-600 tabular-nums">
+              {filteredProducts.length} {featuredOnly ? 'featured products' : 'products'} · {currency} ({market === 'NG' ? 'Nigeria' : 'Australia'})
+            </p>
+            {featuredOnly && (
+              <button type="button" onClick={() => onOpenShop?.()} className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B2D71] px-3.5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#082257] whitespace-nowrap">
+                View All Products <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Prominent, tappable store departments */}
-        <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-5">
-          <div className="flex items-center justify-between gap-3 mb-3">
+        {/* Real product photography for each department */}
+        <div className="mb-7 sm:mb-9">
+          <div className="flex items-end justify-between gap-3 mb-3.5">
             <div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Shop by Category</h3>
-              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Choose a department to see its products</p>
+              <h3 className="text-lg sm:text-xl font-bold text-slate-900">Shop by Category</h3>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Explore our departments and discover what you need</p>
             </div>
-            <span className="text-[10px] sm:text-xs font-semibold text-slate-500 whitespace-nowrap">{categories.length} departments</span>
+            {!featuredOnly && <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">{categories.length} categories</span>}
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => { setSelectedCategory('all'); setSelectedSubcategory('all'); }}
-              aria-pressed={selectedCategory === 'all'}
-              className={`min-h-[78px] sm:min-h-[88px] rounded-xl border p-2.5 flex flex-col items-center justify-center gap-1.5 text-center transition-colors ${
-                selectedCategory === 'all'
-                  ? 'bg-[#0B2D71] border-[#0B2D71] text-white shadow-sm'
-                  : 'bg-white border-slate-200 text-slate-700 hover:border-[#0B2D71] hover:bg-blue-50'
-              }`}
-            >
-              <Package className="w-5 h-5" />
-              <span className="text-[10px] sm:text-xs font-semibold leading-tight">All Products</span>
-            </button>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {categories.map((cat) => {
-              const iconById: Record<string, React.ComponentType<{ className?: string }>> = {
-                'rice-and-grains': Wheat,
-                'beans-and-legumes': Bean,
-                'garri-and-flour': CookingPot,
-                'cooking-oils': CookingPot,
-                'meat-and-poultry': Drumstick,
-                'frozen-foods': Snowflake,
-                'seafood-and-fish': Fish,
-                vegetables: Carrot,
-                'spices-and-seasonings': Soup,
-                'drinks-and-beverages': CupSoda,
-                'snacks-and-groceries': Cookie,
-                'foodstuff-bundles-hampers': Gift,
-                'human-hair-wigs': Sparkles,
-                'native-attires': Shirt,
-                'shoes-sandals-slippers': Footprints,
-              };
-              const CategoryIcon = iconById[cat.id] || Package;
+              const representative = products.find((product) =>
+                product.categoryId === cat.id &&
+                product.images?.[0] &&
+                product.images[0] !== 'MANUAL_UPLOAD_REQUIRED'
+              );
+              const image = representative?.images?.[0] || cat.image || '';
+              const count = products.filter((product) =>
+                product.categoryId === cat.id && (!product.markets || product.markets.includes(market))
+              ).length;
               const active = selectedCategory === cat.id;
               return (
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => { setSelectedCategory(cat.id); setSelectedSubcategory('all'); }}
-                  aria-pressed={active}
-                  className={`min-h-[78px] sm:min-h-[88px] rounded-xl border p-2.5 flex flex-col items-center justify-center gap-1.5 text-center transition-colors ${
-                    active
-                      ? 'bg-[#0B2D71] border-[#0B2D71] text-white shadow-sm'
-                      : 'bg-white border-slate-200 text-slate-700 hover:border-[#0B2D71] hover:bg-blue-50'
-                  }`}
+                  onClick={() => {
+                    if (featuredOnly) onOpenShop?.(cat.id);
+                    else { setSelectedCategory(cat.id); setSelectedSubcategory('all'); }
+                  }}
+                  aria-pressed={!featuredOnly && active}
+                  className={`group relative isolate h-[132px] sm:h-[164px] overflow-hidden rounded-2xl bg-slate-900 text-left shadow-sm ring-1 ring-black/5 transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B2D71] ${!featuredOnly && active ? 'ring-2 ring-[#D61A1E]' : ''}`}
                 >
-                  <CategoryIcon className={`w-5 h-5 ${active ? 'text-white' : 'text-[#D61A1E]'}`} />
-                  <span className="text-[10px] sm:text-xs font-semibold leading-tight">{cat.name}</span>
+                  {image && <img src={image} alt="" loading="lazy" className="absolute inset-0 -z-10 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />}
+                  <span className="absolute inset-0 -z-10 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-slate-950/5" />
+                  <span className="absolute inset-0 -z-10 bg-[#0B2D71]/10" />
+                  <span className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+                    <span className="block text-sm sm:text-base font-bold leading-tight text-white drop-shadow-sm">{cat.name}</span>
+                    <span className="mt-1 block text-[10px] sm:text-xs font-medium text-white/80">{count} {count === 1 ? 'item' : 'items'} <span aria-hidden="true">→</span></span>
+                  </span>
                 </button>
               );
             })}
@@ -138,7 +131,7 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
         </div>
 
         {/* Subcategories (when a category is active) */}
-        {activeCategoryObj && activeCategoryObj.subcategories.length > 0 && (
+        {!featuredOnly && activeCategoryObj && activeCategoryObj.subcategories.length > 0 && (
           <div className="flex items-center gap-1.5 overflow-x-auto pb-3 mb-3">
             <button
               type="button"
@@ -169,7 +162,7 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
         )}
 
         {/* Search, Pay Small Small Filter & Sort Toolbar */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 mb-6">
+        {!featuredOnly && <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 mb-6">
           <div className="md:col-span-6 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -209,7 +202,7 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
               <option value="price_desc">Price: High to Low</option>
             </select>
           </div>
-        </div>
+        </div>}
 
         {/* Product Grid: 2 Columns on Mobile, 3-4 Columns on Desktop */}
         {filteredProducts.length === 0 ? (
@@ -218,9 +211,9 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
               No matching products found
             </p>
             <p className="text-xs text-slate-500 mb-4">
-              Try clearing your search filter or switching categories.
+              {featuredOnly ? 'Check back soon for new featured items.' : 'Try clearing your search filter or switching categories.'}
             </p>
-            <button
+            {!featuredOnly && <button
               type="button"
               onClick={() => {
                 setSelectedCategory('all');
@@ -231,7 +224,7 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
               className="px-4 py-2 bg-[#0B2D71] text-white text-xs font-semibold rounded-lg"
             >
               Reset All Filters
-            </button>
+            </button>}
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
