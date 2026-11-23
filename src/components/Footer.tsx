@@ -57,7 +57,7 @@ export function Footer({ onNavigate }: FooterProps) {
               <li>
                 <button
                   type="button"
-                  onClick={() => onNavigate('storefront', 'catalog')}
+                  onClick={() => onNavigate('shop')}
                   className="hover:text-white transition-colors"
                 >
                   Foodstuffs, Hair &amp; Native Attire
@@ -111,7 +111,7 @@ export function Footer({ onNavigate }: FooterProps) {
 
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>© {new Date().getFullYear()} Samsara Choice Ltd (RC NO: 8240781). All rights reserved.</p>
-          <p>Payments supported: Paystack, Flutterwave, Bank Transfer (NGN) · Stripe, PayID (AUD)</p>
+          <p>Payments supported: Kora, Bank Transfer (NGN) · Stripe, PayID (AUD)</p>
         </div>
       </div>
     </footer>
