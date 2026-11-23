@@ -106,7 +106,7 @@ export function calculatePaySmallSmall(
     currency === 'NGN'
       ? Math.max(0, Math.round(safeTotal - depositAmount))
       : Math.max(0, Math.round((safeTotal - depositAmount) * 100) / 100);
-  const count = Math.max(1, Math.min(frequency === 'daily' ? 365 : 12, instalmentCount));
+  const count = Math.max(1, Math.min(frequency === 'daily' ? 1000 : 12, instalmentCount));
   const stepDays = frequencyToDays(frequency);
   const baseInstalment =
     currency === 'NGN'
