@@ -73,7 +73,7 @@ export function CatalogSection({ onSelectProduct, featuredOnly = false, initialC
               {featuredOnly ? 'Featured Products' : 'Shop All Products'}
             </h2>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
             <p className="text-xs sm:text-sm text-slate-600 tabular-nums">
               {filteredProducts.length} {featuredOnly ? 'featured products' : 'products'} · {currency} ({market === 'NG' ? 'Nigeria' : 'Australia'})
             </p>
