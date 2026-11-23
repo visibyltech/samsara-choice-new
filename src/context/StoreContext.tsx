@@ -291,9 +291,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         // Keep the imported Samsara catalog as the base. Only accept matching
         // imported IDs or products created through this app's admin dashboard.
         const importedIds = new Set(INITIAL_PRODUCTS.map((product) => product.id));
+        const validCategoryIds = new Set(INITIAL_CATEGORIES.map((category) => category.id));
         const remoteProducts = snap.docs
           .map((d) => ({ ...(d.data() as Product), id: d.id }))
-          .filter((product) => importedIds.has(product.id) || product.id.startsWith('prod-'));
+          .filter(
+            (product) =>
+              importedIds.has(product.id) ||
+              (product.id.startsWith('prod-') && validCategoryIds.has(product.categoryId))
+          );
         const remoteById = new Map(remoteProducts.map((product) => [product.id, product]));
         const importedCatalog = INITIAL_PRODUCTS.map((product) => ({
           ...product,
