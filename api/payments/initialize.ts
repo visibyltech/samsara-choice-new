@@ -1,4 +1,4 @@
-import { verifyFirebaseBearerToken } from '../_lib/auth';
+import { verifyFirebaseBearerToken } from '../../lib/firebaseAuth';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
