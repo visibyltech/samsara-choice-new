@@ -50,8 +50,7 @@ export function CheckoutModal({
   );
 
   const allPssEligible = cart.length > 0 && cart.every((c) => c.pssEligible);
-  const minPssOrder = market === 'NG' ? settings.pssMinOrderNGN : settings.pssMinOrderAUD;
-  const canUsePaySmallSmall = settings.pssEnabled && allPssEligible && subtotal >= minPssOrder;
+  const canUsePaySmallSmall = settings.pssEnabled && allPssEligible;
 
   const [paymentMode, setPaymentMode] = useState<PaymentMode>(
     canUsePaySmallSmall ? 'pay_small_small' : 'buy_now'
@@ -289,7 +288,7 @@ export function CheckoutModal({
                           )}) & spread the balance.`
                         : !allPssEligible
                         ? 'Unavailable: cart contains Buy-Now-only items.'
-                        : `Requires min. order of ${formatMoney(minPssOrder, currency)}.`}
+                        : 'Pay Small Small is currently unavailable for this order.'}
                     </p>
                   </button>
 
