@@ -87,6 +87,7 @@ export function CatalogSection({ onSelectProduct, featuredOnly = false, initialC
 
         {/* Department browsing belongs in the full shop, not the homepage. */}
         {!featuredOnly && (
+          <>
         {/* Real product photography for each department */}
         <div className="mb-7 sm:mb-9">
           <div className="flex items-end justify-between gap-3 mb-3.5">
@@ -131,7 +132,7 @@ export function CatalogSection({ onSelectProduct, featuredOnly = false, initialC
             })}
           </div>
         </div>
-
+          </>
         )}
 
         {/* Subcategories (when a category is active) */}
