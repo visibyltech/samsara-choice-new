@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CalendarClock, CreditCard, Lock, ShieldCheck, Tag, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Address, InstalmentFrequency, PaymentGateway, PaymentMode } from '../types';
@@ -63,6 +63,10 @@ export function CheckoutModal({
   const [paymentMethod, setPaymentMethod] = useState<PaymentGateway>(
     market === 'NG' ? 'korapay' : 'stripe'
   );
+
+  useEffect(() => {
+    setPaymentMethod(market === 'NG' ? 'korapay' : 'stripe');
+  }, [market]);
   const [manualRef, setManualRef] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
