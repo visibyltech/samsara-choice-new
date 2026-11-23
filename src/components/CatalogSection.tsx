@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Heart, Search, ShoppingBag, SlidersHorizontal } from 'lucide-react';
+import { Bean, Carrot, Cookie, CookingPot, CupSoda, Drumstick, Fish, Footprints, Gift, Heart, Package, Search, Shirt, ShoppingBag, SlidersHorizontal, Snowflake, Soup, Sparkles, Wheat } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product } from '../types';
 import { formatMoney, getComparePrice, getProductPrice } from '../utils/currency';
@@ -66,7 +66,7 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
               Samsara Choice Storefront · Nigeria &amp; Australia
             </p>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              Shop Foodstuffs, Bundles &amp; Fashion
+              Shop Our Store
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-600 tabular-nums">
@@ -74,39 +74,67 @@ export function CatalogSection({ onSelectProduct }: CatalogSectionProps) {
           </p>
         </div>
 
-        {/* Category Navigation Strip */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-4 border-b border-slate-200">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedCategory('all');
-              setSelectedSubcategory('all');
-            }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
-              selectedCategory === 'all'
-                ? 'bg-[#0B2D71] text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            All Categories
-          </button>
-          {categories.map((cat) => (
+        {/* Prominent, tappable store departments */}
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-5">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Shop by Category</h3>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Choose a department to see its products</p>
+            </div>
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-500 whitespace-nowrap">{categories.length} departments</span>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
             <button
-              key={cat.id}
               type="button"
-              onClick={() => {
-                setSelectedCategory(cat.id);
-                setSelectedSubcategory('all');
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
-                selectedCategory === cat.id
-                  ? 'bg-[#0B2D71] text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              onClick={() => { setSelectedCategory('all'); setSelectedSubcategory('all'); }}
+              aria-pressed={selectedCategory === 'all'}
+              className={`min-h-[78px] sm:min-h-[88px] rounded-xl border p-2.5 flex flex-col items-center justify-center gap-1.5 text-center transition-colors ${
+                selectedCategory === 'all'
+                  ? 'bg-[#0B2D71] border-[#0B2D71] text-white shadow-sm'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-[#0B2D71] hover:bg-blue-50'
               }`}
             >
-              {cat.name}
+              <Package className="w-5 h-5" />
+              <span className="text-[10px] sm:text-xs font-semibold leading-tight">All Products</span>
             </button>
-          ))}
+            {categories.map((cat) => {
+              const iconById: Record<string, React.ComponentType<{ className?: string }>> = {
+                'rice-and-grains': Wheat,
+                'beans-and-legumes': Bean,
+                'garri-and-flour': CookingPot,
+                'cooking-oils': CookingPot,
+                'meat-and-poultry': Drumstick,
+                'frozen-foods': Snowflake,
+                'seafood-and-fish': Fish,
+                vegetables: Carrot,
+                'spices-and-seasonings': Soup,
+                'drinks-and-beverages': CupSoda,
+                'snacks-and-groceries': Cookie,
+                'foodstuff-bundles-hampers': Gift,
+                'human-hair-wigs': Sparkles,
+                'native-attires': Shirt,
+                'shoes-sandals-slippers': Footprints,
+              };
+              const CategoryIcon = iconById[cat.id] || Package;
+              const active = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => { setSelectedCategory(cat.id); setSelectedSubcategory('all'); }}
+                  aria-pressed={active}
+                  className={`min-h-[78px] sm:min-h-[88px] rounded-xl border p-2.5 flex flex-col items-center justify-center gap-1.5 text-center transition-colors ${
+                    active
+                      ? 'bg-[#0B2D71] border-[#0B2D71] text-white shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-700 hover:border-[#0B2D71] hover:bg-blue-50'
+                  }`}
+                >
+                  <CategoryIcon className={`w-5 h-5 ${active ? 'text-white' : 'text-[#D61A1E]'}`} />
+                  <span className="text-[10px] sm:text-xs font-semibold leading-tight">{cat.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Subcategories (when a category is active) */}
