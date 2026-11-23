@@ -197,6 +197,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [gatewayStatus, setGatewayStatus] = useState<GatewayConfigStatus>({
+    korapayConfigured: false,
     paystackConfigured: false,
     paystackPublicKey: '',
     flutterwaveConfigured: false,
@@ -802,6 +803,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const data = await resp.json();
     if (!resp.ok) {
       throw new Error(data.error || 'Payment initialization failed.');
+    }
+    if (gateway === 'korapay' && !data.configured) {
+      throw new Error(data.message || 'Korapay is not configured yet. Please contact the store.');
     }
     return data;
   };
