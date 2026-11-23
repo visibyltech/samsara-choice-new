@@ -1,0 +1,6 @@
+{
+  "name": "Samsara Choice Ltd",
+  "description": "Samsara Choice Ltd — Complete e-commerce storefront for Nigeria & Australia featuring Pay Small Small instalments, foodstuff bundles, weekly/monthly subscriptions, frozen foods, human hair, native attires, and footwear.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
