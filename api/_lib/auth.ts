@@ -1,5 +1,4 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import firebaseConfig from '../../firebase-applet-config.json';
 
 export interface VerifiedFirebaseUser {
   uid: string;
@@ -9,17 +8,7 @@ export interface VerifiedFirebaseUser {
 }
 
 function getFirebaseApiKey(): string {
-  if (process.env.FIREBASE_API_KEY) return process.env.FIREBASE_API_KEY;
-  try {
-    const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as { apiKey?: string };
-      return config.apiKey || '';
-    }
-  } catch {
-    return '';
-  }
-  return '';
+  return process.env.FIREBASE_API_KEY || firebaseConfig.apiKey || '';
 }
 
 export async function verifyFirebaseBearerToken(authHeader?: string): Promise<VerifiedFirebaseUser | null> {
