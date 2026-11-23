@@ -20,7 +20,7 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onSelectProduct: (p: Product) => void;
   onOpenAuth: () => void;
-  onCheckout: (mode: 'buy_now' | 'pay_small_small', dailyAmount?: number) => void;
+  onCheckout: (mode: 'buy_now' | 'pay_small_small', dailyAmount?: number, depositPercent?: number) => void;
 }
 
 export function ProductDetailModal({
@@ -258,7 +258,7 @@ export function ProductDetailModal({
                           </button>
                         ))}
                       </div>
-                      <button type="button" disabled={product.stock <= 0} onClick={async () => { await addToCart(product, quantity, selectedVariant); onClose(); onCheckout('pay_small_small', selectedDailyAmount); }} className="w-full rounded-lg bg-[#D61A1E] px-3 py-3 text-xs font-bold text-white hover:bg-[#B51418] disabled:bg-slate-300">
+                      <button type="button" disabled={product.stock <= 0} onClick={async () => { await addToCart(product, quantity, selectedVariant); onClose(); onCheckout('pay_small_small', selectedDailyAmount, depositPct); }} className="w-full rounded-lg bg-[#D61A1E] px-3 py-3 text-xs font-bold text-white hover:bg-[#B51418] disabled:bg-slate-300">
                         Continue with {formatMoney(selectedDailyAmount, currency)} daily
                       </button>
                     </div>
