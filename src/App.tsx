@@ -22,6 +22,7 @@ function StorefrontApp() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutPreset, setCheckoutPreset] = useState<{ mode: 'buy_now' | 'pay_small_small'; dailyAmount?: number } | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [shopCategory, setShopCategory] = useState('all');
 
@@ -78,6 +79,10 @@ function StorefrontApp() {
         onNavigate={handleNavigate}
         onOpenCart={() => setCartOpen(true)}
         onOpenAuth={() => setAuthOpen(true)}
+        onCheckout={(mode, dailyAmount) => {
+          setCheckoutPreset({ mode, dailyAmount });
+          setCheckoutOpen(true);
+        }}
       />
 
       <main className="flex-1">
@@ -135,7 +140,9 @@ function StorefrontApp() {
           setCheckoutOpen(false);
           setAuthOpen(true);
         }}
-        onOrderComplete={() => handleNavigate('account')}
+        onOrderComplete={() => { setCheckoutPreset(null); handleNavigate('account'); }}
+        initialPaymentMode={checkoutPreset?.mode || 'buy_now'}
+        initialDailyPaymentAmount={checkoutPreset?.dailyAmount}
       />
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
