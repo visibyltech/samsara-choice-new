@@ -200,8 +200,8 @@ export function CheckoutModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/65 overflow-y-auto p-3 sm:p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xl my-4">
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xl my-2 sm:my-4">
+        <div className="px-4 sm:px-6 py-3.5 border-b border-slate-200 flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-[#0B2D71]">
               Samsara Choice Checkout · {market === 'NG' ? 'Nigeria (NGN ₦)' : 'Australia (AUD A$)'}
@@ -220,6 +220,11 @@ export function CheckoutModal({
           </button>
         </div>
 
+        <div className="grid grid-cols-3 gap-2 px-4 sm:px-6 py-3 bg-slate-50 border-b border-slate-200 text-[10px] sm:text-xs font-semibold">
+          <div className="flex items-center gap-1.5 text-[#0B2D71]"><span className="w-5 h-5 rounded-full bg-[#0B2D71] text-white inline-flex items-center justify-center text-[10px]">1</span> Bag</div>
+          <div className="flex items-center gap-1.5 text-[#0B2D71]"><span className="w-5 h-5 rounded-full bg-[#0B2D71] text-white inline-flex items-center justify-center text-[10px]">2</span> Delivery</div>
+          <div className="flex items-center gap-1.5 text-[#0B2D71]"><span className="w-5 h-5 rounded-full bg-[#0B2D71] text-white inline-flex items-center justify-center text-[10px]">3</span> Payment</div>
+        </div>
         {!user ? (
           <div className="p-8 text-center space-y-4">
             <p className="text-base font-semibold text-slate-900">
@@ -238,7 +243,7 @@ export function CheckoutModal({
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 sm:p-8 grid lg:grid-cols-12 gap-8">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 grid lg:grid-cols-12 gap-5 sm:gap-7">
             <div className="lg:col-span-7 space-y-6">
               {!user.emailVerified && (
                 <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center justify-between gap-3">
@@ -609,7 +614,7 @@ export function CheckoutModal({
 
             {/* Right Summary Column */}
             <div className="lg:col-span-5">
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 sticky top-6">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 lg:sticky lg:top-6">
                 <h3 className="font-display text-base font-bold text-slate-900">Order Summary</h3>
 
                 <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1 text-xs">
@@ -686,7 +691,7 @@ export function CheckoutModal({
                   {effectiveMode === 'pay_small_small' && (
                     <p className="text-[11px] text-slate-500">
                       Remaining {formatMoney(pssBreakdown.remainingBalance, currency)} split into{' '}
-                      {pssPeriods} {pssFrequency} payments
+                      {pssFrequency === 'daily' ? `${effectivePssPeriods} daily payments of ${formatMoney(pssDailyPaymentAmount, currency)}` : `${effectivePssPeriods} ${pssFrequency} payments`}
                     </p>
                   )}
                 </div>
