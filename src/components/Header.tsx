@@ -3,7 +3,7 @@ import { Menu, ShoppingBag, X } from 'lucide-react';
 import { BRAND_LOGO_URL } from '../data/catalog';
 import { useStore } from '../context/StoreContext';
 
-export type ActiveView = 'storefront' | 'account' | 'admin';
+export type ActiveView = 'storefront' | 'shop' | 'account' | 'admin';
 
 interface HeaderProps {
   activeView: ActiveView;
@@ -80,12 +80,12 @@ export function Header({ activeView, onNavigate, onOpenCart, onOpenAuth }: Heade
         <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-700">
           <button
             type="button"
-            onClick={() => handleLink('storefront', 'catalog')}
+            onClick={() => handleLink('shop')}
             className={`hover:text-[#D61A1E] transition-colors whitespace-nowrap shrink-0 py-1 ${
               activeView === 'storefront' ? 'text-slate-900 font-semibold' : ''
             }`}
           >
-            Categories &amp; Products
+            Shop All Products
           </button>
           <button
             type="button"
@@ -153,7 +153,7 @@ export function Header({ activeView, onNavigate, onOpenCart, onOpenAuth }: Heade
             onClick={() => handleLink('storefront', 'catalog')}
             className="block w-full text-left px-3 py-3 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50"
           >
-            Browse Product Categories
+            Shop All Products
           </button>
           <button
             type="button"
