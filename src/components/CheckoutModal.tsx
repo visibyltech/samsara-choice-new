@@ -61,7 +61,7 @@ export function CheckoutModal({
   const [couponMsg, setCouponMsg] = useState('');
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentGateway>(
-    market === 'NG' ? 'paystack' : 'stripe'
+    market === 'NG' ? 'korapay' : 'stripe'
   );
   const [manualRef, setManualRef] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -444,6 +444,26 @@ export function CheckoutModal({
                 </h3>
                 <div className="space-y-2">
                   {market === 'NG' ? (
+                    <>
+                      <label className="flex items-center justify-between p-3.5 rounded-xl border border-[#0B2D71]/30 bg-blue-50/50 cursor-pointer hover:bg-blue-50">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="gw"
+                            checked={paymentMethod === 'korapay'}
+                            onChange={() => setPaymentMethod('korapay')}
+                          />
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">Kora (Korapay) · Card &amp; Bank</p>
+                            <p className="text-xs text-slate-500">
+                              {gatewayStatus.korapayConfigured
+                                ? 'Korapay secure checkout is ready'
+                                : 'Korapay integration added · awaiting KORAPAY_SECRET_KEY'}
+                            </p>
+                          </div>
+                          <span className="ml-auto rounded-full bg-[#0B2D71] px-2 py-1 text-[10px] font-bold text-white">Recommended</span>
+                        </div>
+                      </label>
                     <>
                       <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
                         <div className="flex items-center gap-3">
