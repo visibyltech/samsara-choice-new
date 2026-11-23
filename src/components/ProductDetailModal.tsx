@@ -125,9 +125,9 @@ export function ProductDetailModal({
             type="button"
             onClick={onClose}
             aria-label="Close product detail"
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+            className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 

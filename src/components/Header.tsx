@@ -89,7 +89,7 @@ export function Header({ activeView, onNavigate, onOpenCart, onOpenAuth }: Heade
           </button>
           <button
             type="button"
-            onClick={() => handleLink('storefront', 'pay-small-small')}
+            onClick={() => handleLink('shop')}
             className="hover:text-[#D61A1E] transition-colors whitespace-nowrap shrink-0 py-1"
           >
             Pay Small Small
@@ -157,7 +157,7 @@ export function Header({ activeView, onNavigate, onOpenCart, onOpenAuth }: Heade
           </button>
           <button
             type="button"
-            onClick={() => handleLink('storefront', 'pay-small-small')}
+            onClick={() => handleLink('shop')}
             className="block w-full text-left px-3 py-3 rounded-lg text-sm font-semibold text-[#D61A1E] hover:bg-red-50"
           >
             Pay Small Small Instalments

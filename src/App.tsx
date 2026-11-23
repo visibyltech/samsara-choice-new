@@ -4,7 +4,6 @@ import { StoreProvider, useStore } from './context/StoreContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ActiveView, Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
-import { PaySmallSmallShowcase } from './components/PaySmallSmallShowcase';
 import { SubscriptionsShowcase } from './components/SubscriptionsShowcase';
 import { CatalogSection } from './components/CatalogSection';
 import { ProductDetailModal } from './components/ProductDetailModal';
@@ -129,7 +128,6 @@ function StorefrontApp() {
               onExploreSubscriptions={() => handleNavigate('storefront', 'subscriptions')}
             />
             <CatalogSection featuredOnly onOpenShop={handleOpenShop} onSelectProduct={(p) => setSelectedProduct(p)} />
-            <PaySmallSmallShowcase onSelectProduct={(p) => setSelectedProduct(p)} />
             <SubscriptionsShowcase
               onRequireAuth={() => setAuthOpen(true)}
               onSuccessNavigateAccount={() => handleNavigate('account')}
