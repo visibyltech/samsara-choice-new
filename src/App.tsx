@@ -81,12 +81,12 @@ function StorefrontApp() {
               onExploreCatalog={() => handleNavigate('storefront', 'catalog')}
               onExploreSubscriptions={() => handleNavigate('storefront', 'subscriptions')}
             />
+            <CatalogSection onSelectProduct={(p) => setSelectedProduct(p)} />
             <PaySmallSmallShowcase onSelectProduct={(p) => setSelectedProduct(p)} />
             <SubscriptionsShowcase
               onRequireAuth={() => setAuthOpen(true)}
               onSuccessNavigateAccount={() => handleNavigate('account')}
             />
-            <CatalogSection onSelectProduct={(p) => setSelectedProduct(p)} />
           </>
         )}
 
