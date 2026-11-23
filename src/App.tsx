@@ -79,10 +79,6 @@ function StorefrontApp() {
         onNavigate={handleNavigate}
         onOpenCart={() => setCartOpen(true)}
         onOpenAuth={() => setAuthOpen(true)}
-        onCheckout={(mode, dailyAmount) => {
-          setCheckoutPreset({ mode, dailyAmount });
-          setCheckoutOpen(true);
-        }}
       />
 
       <main className="flex-1">
@@ -122,12 +118,17 @@ function StorefrontApp() {
         onClose={() => setSelectedProduct(null)}
         onSelectProduct={(p) => setSelectedProduct(p)}
         onOpenAuth={() => setAuthOpen(true)}
+        onCheckout={(mode, dailyAmount) => {
+          setCheckoutPreset({ mode, dailyAmount });
+          setCheckoutOpen(true);
+        }}
       />
 
       <CartDrawer
         open={cartOpen}
         onClose={() => setCartOpen(false)}
         onProceedToCheckout={() => {
+          setCheckoutPreset({ mode: 'buy_now' });
           setCartOpen(false);
           setCheckoutOpen(true);
         }}
