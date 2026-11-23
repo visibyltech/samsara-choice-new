@@ -22,10 +22,20 @@ export default async function handler(req: any, res: any) {
       });
       const payload = await response.json() as {
         status?: boolean;
-        data?: { reference?: string; status?: string; amount?: string | number; amount_paid?: string | number; currency?: string };
+        data?: { reference?: string; status?: string; amount?: string | number; amount_paid?: string | number; currency?: string; transaction_status?: string };
       };
+      const expectedAmount = Number(payload.data?.amount);
       const amount = Number(payload.data?.amount_paid ?? payload.data?.amount);
-      const verified = Boolean(response.ok && payload.status && payload.data?.status === 'success' && Number.isFinite(amount) && amount > 0);
+      const verified = Boolean(
+        response.ok &&
+        payload.status &&
+        payload.data?.status === 'success' &&
+        (!payload.data?.transaction_status || payload.data.transaction_status === 'success') &&
+        Number.isFinite(expectedAmount) &&
+        Number.isFinite(amount) &&
+        expectedAmount > 0 &&
+        amount >= expectedAmount
+      );
       return res.status(200).json({
         verified,
         gateway,
