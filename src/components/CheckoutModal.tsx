@@ -14,6 +14,8 @@ interface CheckoutModalProps {
   onClose: () => void;
   onRequireAuth: () => void;
   onOrderComplete: () => void;
+  initialPaymentMode?: PaymentMode;
+  initialDailyPaymentAmount?: number;
 }
 
 export function CheckoutModal({
@@ -21,6 +23,8 @@ export function CheckoutModal({
   onClose,
   onRequireAuth,
   onOrderComplete,
+  initialPaymentMode = 'buy_now',
+  initialDailyPaymentAmount,
 }: CheckoutModalProps) {
   const {
     user,
@@ -53,6 +57,7 @@ export function CheckoutModal({
     canUsePaySmallSmall ? 'pay_small_small' : 'buy_now'
   );
   const [pssFrequency, setPssFrequency] = useState<InstalmentFrequency>('weekly');
+  const [pssDailyPaymentAmount, setPssDailyPaymentAmount] = useState<number>(market === 'NG' ? 500 : 5);
   const [pssPeriods, setPssPeriods] = useState<number>(3);
   const [pssDepositPct, setPssDepositPct] = useState<number>(settings.pssDefaultDepositPercent);
 
@@ -66,6 +71,7 @@ export function CheckoutModal({
 
   useEffect(() => {
     setPaymentMethod(market === 'NG' ? 'korapay' : 'stripe');
+    setPssDailyPaymentAmount(market === 'NG' ? 500 : 5);
   }, [market]);
   const [manualRef, setManualRef] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -98,16 +104,23 @@ export function CheckoutModal({
   const effectiveMode: PaymentMode =
     paymentMode === 'pay_small_small' && canUsePaySmallSmall ? 'pay_small_small' : 'buy_now';
 
-  const pssBreakdown = calculatePaySmallSmall(
-    grandTotal,
-    pssDepositPct,
-    pssFrequency,
-    pssPeriods,
-    currency
-  );
+  const estimatedDeposit = currency === 'NGN' ? Math.round((grandTotal * pssDepositPct) / 100) : Math.round((grandTotal * pssDepositPct / 100) * 100) / 100;
+  const effectivePssPeriods = pssFrequency === 'daily' ? Math.max(1, Math.ceil(Math.max(0, grandTotal - estimatedDeposit) / Math.max(1, pssDailyPaymentAmount))) : pssPeriods;
+  const pssBreakdown = calculatePaySmallSmall(grandTotal, pssDepositPct, pssFrequency, effectivePssPeriods, currency, new Date(), pssFrequency === 'daily' ? pssDailyPaymentAmount : undefined);
 
   const amountDueNow =
     effectiveMode === 'pay_small_small' ? pssBreakdown.depositAmount : grandTotal;
+
+  useEffect(() => {
+    if (!open) return;
+    setPaymentMode(initialPaymentMode === 'pay_small_small' && canUsePaySmallSmall ? 'pay_small_small' : initialPaymentMode);
+    if (initialDailyPaymentAmount) {
+      setPssFrequency('daily');
+      setPssDailyPaymentAmount(initialDailyPaymentAmount);
+    } else {
+      setPssFrequency('weekly');
+    }
+  }, [open, initialPaymentMode, initialDailyPaymentAmount, canUsePaySmallSmall]);
 
   const activeShippingAddress: Address =
     selectedAddressId !== 'new'
@@ -167,7 +180,8 @@ export function CheckoutModal({
         deliveryFee,
         pssDepositPercent: pssDepositPct,
         pssFrequency,
-        pssPeriods,
+        pssPeriods: effectivePssPeriods,
+        ...(pssFrequency === 'daily' ? { pssDailyPaymentAmount } : {}),
         manualTransferRef: manualRef,
       });
       onClose();
@@ -323,31 +337,27 @@ export function CheckoutModal({
                           onChange={(e) => setPssFrequency(e.target.value as InstalmentFrequency)}
                           className="w-full px-2.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold capitalize"
                         >
-                          {settings.pssAllowedFrequencies.map((f) => (
-                            <option key={f} value={f}>
-                              {f}
-                            </option>
+                          <option value="daily">Daily</option>
+                          {settings.pssAllowedFrequencies.filter((f) => f !== 'daily').map((f) => (
+                            <option key={f} value={f}>{f}</option>
                           ))}
                         </select>
                       </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                          Instalments
-                        </label>
-                        <select
-                          value={pssPeriods}
-                          onChange={(e) => setPssPeriods(Number(e.target.value))}
-                          className="w-full px-2.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold"
-                        >
-                          {Array.from({ length: settings.pssMaxPeriods }, (_, i) => i + 1).map(
-                            (n) => (
-                              <option key={n} value={n}>
-                                {n} payment{n > 1 ? 's' : ''}
-                              </option>
-                            )
-                          )}
-                        </select>
-                      </div>
+                      {pssFrequency === 'daily' ? (
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">Daily Amount</label>
+                          <select value={pssDailyPaymentAmount} onChange={(e) => setPssDailyPaymentAmount(Number(e.target.value))} className="w-full px-2.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
+                            {(market === 'NG' ? [500, 1000] : [5, 10]).map((amount) => <option key={amount} value={amount}>{formatMoney(amount, currency)} / day</option>)}
+                          </select>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">Instalments</label>
+                          <select value={pssPeriods} onChange={(e) => setPssPeriods(Number(e.target.value))} className="w-full px-2.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold">
+                            {Array.from({ length: settings.pssMaxPeriods }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n} payment{n > 1 ? 's' : ''}</option>)}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     <div className="text-xs text-slate-600 flex items-center gap-2 pt-1">
