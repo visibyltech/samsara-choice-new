@@ -22,7 +22,7 @@ function StorefrontApp() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [checkoutPreset, setCheckoutPreset] = useState<{ mode: 'buy_now' | 'pay_small_small'; dailyAmount?: number } | null>(null);
+  const [checkoutPreset, setCheckoutPreset] = useState<{ mode: 'buy_now' | 'pay_small_small'; dailyAmount?: number; depositPercent?: number } | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [shopCategory, setShopCategory] = useState('all');
 
@@ -118,8 +118,8 @@ function StorefrontApp() {
         onClose={() => setSelectedProduct(null)}
         onSelectProduct={(p) => setSelectedProduct(p)}
         onOpenAuth={() => setAuthOpen(true)}
-        onCheckout={(mode, dailyAmount) => {
-          setCheckoutPreset({ mode, dailyAmount });
+        onCheckout={(mode, dailyAmount, depositPercent) => {
+          setCheckoutPreset({ mode, dailyAmount, depositPercent });
           setCheckoutOpen(true);
         }}
       />
@@ -143,6 +143,7 @@ function StorefrontApp() {
         onOrderComplete={() => { setCheckoutPreset(null); handleNavigate('account'); }}
         initialPaymentMode={checkoutPreset?.mode || 'buy_now'}
         initialDailyPaymentAmount={checkoutPreset?.dailyAmount}
+        initialDepositPercent={checkoutPreset?.depositPercent}
       />
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
