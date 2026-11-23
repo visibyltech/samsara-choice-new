@@ -90,6 +90,7 @@ interface CheckoutPayload {
   pssDepositPercent?: number;
   pssFrequency?: InstalmentFrequency;
   pssPeriods?: number;
+  pssDailyPaymentAmount?: number;
   manualTransferRef?: string;
 }
 
@@ -612,6 +613,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     const existingItem = cart.find((i) => i.id === itemId);
     const nextQty = (existingItem?.quantity || 0) + quantity;
+    setCart((prev) => {
+      const current = prev.find((i) => i.id === itemId);
+      if (current) return prev.map((i) => i.id === itemId ? { ...i, quantity: Math.min(999, i.quantity + quantity) } : i);
+      return [...prev, { id: itemId, productId: product.id, name: product.name, image: product.images[0] || '', variant: chosenVariant, quantity, priceNGN: product.priceNGN, priceAUD: product.priceAUD, pssEligible: product.pssEligible }];
+    });
     const itemRef = doc(db, 'users', user.uid, 'cart', itemId);
     try {
       await setDoc(itemRef, {
@@ -845,8 +851,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const pssFreq = payload.pssFrequency || 'weekly';
     const pssPeriods = payload.pssPeriods || 3;
 
+    const dailyAmount = pssFreq === 'daily' ? payload.pssDailyPaymentAmount : undefined;
+    const effectivePeriods = pssFreq === 'daily' && dailyAmount
+      ? Math.max(1, Math.ceil(Math.max(0, totalAmount - Math.round((totalAmount * depositPct) / 100)) / dailyAmount))
+      : pssPeriods;
     const pssCalc = isPss
-      ? calculatePaySmallSmall(totalAmount, depositPct, pssFreq, pssPeriods, currency)
+      ? calculatePaySmallSmall(totalAmount, depositPct, pssFreq, effectivePeriods, currency, new Date(), dailyAmount)
       : null;
 
     const amountDueNow = isPss && pssCalc ? pssCalc.depositAmount : totalAmount;
@@ -934,6 +944,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         totalInstalments: pssCalc.instalmentCount,
         paidInstalments: 0,
         instalmentAmount: pssCalc.instalmentAmount,
+        ...(dailyAmount ? { dailyPaymentAmount: dailyAmount } : {}),
         nextPaymentDate: pssCalc.nextPaymentDate,
         releaseThresholdPercent: settings.pssReleaseThresholdPercent,
         status: 'pending_deposit',
