@@ -85,7 +85,7 @@ export function Header({ activeView, onNavigate, onOpenCart, onOpenAuth }: Heade
               activeView === 'storefront' ? 'text-slate-900 font-semibold' : ''
             }`}
           >
-            Shop Catalog
+            Categories &amp; Products
           </button>
           <button
             type="button"
@@ -153,7 +153,7 @@ export function Header({ activeView, onNavigate, onOpenCart, onOpenAuth }: Heade
             onClick={() => handleLink('storefront', 'catalog')}
             className="block w-full text-left px-3 py-3 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50"
           >
-            Shop Full Catalog
+            Browse Product Categories
           </button>
           <button
             type="button"
