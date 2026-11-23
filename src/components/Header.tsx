@@ -82,7 +82,7 @@ export function Header({ activeView, onNavigate, onOpenCart, onOpenAuth }: Heade
             type="button"
             onClick={() => handleLink('shop')}
             className={`hover:text-[#D61A1E] transition-colors whitespace-nowrap shrink-0 py-1 ${
-              activeView === 'storefront' ? 'text-slate-900 font-semibold' : ''
+              activeView === 'shop' ? 'text-slate-900 font-semibold' : ''
             }`}
           >
             Shop All Products
