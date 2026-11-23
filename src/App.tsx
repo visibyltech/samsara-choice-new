@@ -138,7 +138,6 @@ function StorefrontApp() {
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
         onRequireAuth={() => {
-          setCheckoutOpen(false);
           setAuthOpen(true);
         }}
         onOrderComplete={() => { setCheckoutPreset(null); handleNavigate('account'); }}
