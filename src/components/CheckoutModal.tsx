@@ -468,7 +468,6 @@ export function CheckoutModal({
                           <span className="ml-auto rounded-full bg-[#0B2D71] px-2 py-1 text-[10px] font-bold text-white">Recommended</span>
                         </div>
                       </label>
-                    <>
                       <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
                         <div className="flex items-center gap-3">
                           <input
