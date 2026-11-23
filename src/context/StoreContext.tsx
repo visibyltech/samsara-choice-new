@@ -191,7 +191,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [subscriptionPackages, setSubscriptionPackages] = useState<SubscriptionPackage[]>(INITIAL_SUBSCRIPTION_PACKAGES);
   const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = window.localStorage.getItem('samsara_guest_cart');
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed as CartItem[] : [];
+    } catch {
+      return [];
+    }
+  });
   const [orders, setOrders] = useState<Order[]>([]);
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
   const [subscriptions, setSubscriptions] = useState<CustomerSubscription[]>([]);
@@ -223,8 +232,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [toast]);
 
   useEffect(() => {
-    if (!user && cart.length > 0 && typeof window !== 'undefined') {
-      window.localStorage.setItem('samsara_guest_cart', JSON.stringify(cart));
+    if (!user && typeof window !== 'undefined') {
+      if (cart.length > 0) window.localStorage.setItem('samsara_guest_cart', JSON.stringify(cart));
+      else window.localStorage.removeItem('samsara_guest_cart');
     }
   }, [cart, user]);
 
