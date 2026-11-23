@@ -216,7 +216,6 @@ export function ProductDetailModal({
                 </div>
               )}
 
-}
             </div>
 
             <div className="space-y-3 pt-3 border-t border-slate-200">
