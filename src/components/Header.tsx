@@ -128,9 +128,9 @@ export function Header({ activeView, onNavigate, onOpenCart, onOpenAuth }: Heade
           <button
             type="button"
             onClick={onOpenCart}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#D61A1E] hover:bg-[#B51418] text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 min-h-[42px]"
+            className="inline-flex items-center gap-1.5 px-2 py-1.5 bg-[#D61A1E] hover:bg-[#B51418] text-white text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 min-h-[30px] sm:px-3 sm:py-2 sm:text-sm sm:min-h-[36px]"
           >
-            <ShoppingBag className="w-4 h-4" />
+            <ShoppingBag className="w-3.5 h-3.5" />
             <span className="tabular-nums">Bag ({cartCount})</span>
           </button>
 

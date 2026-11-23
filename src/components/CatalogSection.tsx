@@ -87,51 +87,59 @@ export function CatalogSection({ onSelectProduct, featuredOnly = false, initialC
           </div>
         </div>
 
-        {/* Category browsing stays visible on the homepage and in the full shop. */}
-        {/* Real product photography for each department */}
-        <div className="mb-7 sm:mb-9">
-          <div className="flex items-end justify-between gap-3 mb-3.5">
-            <div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900">Shop by Category</h3>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Explore our departments and discover what you need</p>
+        {/* Homepage category tiles; compact dropdown on the full shop page. */}
+        {featuredOnly ? (
+          <div className="mb-7 sm:mb-9">
+            <div className="flex items-end justify-between gap-3 mb-3.5">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900">Shop by Category</h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Explore our departments and discover what you need</p>
+              </div>
             </div>
-            {!featuredOnly && <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">{categories.length} categories</span>}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {categories.map((cat) => {
+                const representative = products.find((product) =>
+                  product.categoryId === cat.id &&
+                  product.images?.[0] &&
+                  product.images[0] !== 'MANUAL_UPLOAD_REQUIRED'
+                );
+                const image = representative?.images?.[0] || cat.image || '';
+                const count = products.filter((product) =>
+                  product.categoryId === cat.id && (!product.markets || product.markets.includes(market))
+                ).length;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => onOpenShop?.(cat.id)}
+                    className="group relative isolate h-[132px] sm:h-[164px] overflow-hidden rounded-2xl bg-slate-900 text-left shadow-sm ring-1 ring-black/5 transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B2D71]"
+                  >
+                    {image && <img src={image} alt="" loading="lazy" className="absolute inset-0 -z-10 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />}
+                    <span className="absolute inset-0 -z-10 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-slate-950/5" />
+                    <span className="absolute inset-0 -z-10 bg-[#0B2D71]/10" />
+                    <span className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+                      <span className="block text-sm sm:text-base font-bold leading-tight text-white drop-shadow-sm">{cat.name}</span>
+                      <span className="mt-1 block text-[10px] sm:text-xs font-medium text-white/80">{count} {count === 1 ? 'item' : 'items'} <span aria-hidden="true">→</span></span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {categories.map((cat) => {
-              const representative = products.find((product) =>
-                product.categoryId === cat.id &&
-                product.images?.[0] &&
-                product.images[0] !== 'MANUAL_UPLOAD_REQUIRED'
-              );
-              const image = representative?.images?.[0] || cat.image || '';
-              const count = products.filter((product) =>
-                product.categoryId === cat.id && (!product.markets || product.markets.includes(market))
-              ).length;
-              const active = selectedCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => {
-                    if (featuredOnly) onOpenShop?.(cat.id);
-                    else { setSelectedCategory(cat.id); setSelectedSubcategory('all'); }
-                  }}
-                  aria-pressed={!featuredOnly && active}
-                  className={`group relative isolate h-[132px] sm:h-[164px] overflow-hidden rounded-2xl bg-slate-900 text-left shadow-sm ring-1 ring-black/5 transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B2D71] ${!featuredOnly && active ? 'ring-2 ring-[#D61A1E]' : ''}`}
-                >
-                  {image && <img src={image} alt="" loading="lazy" className="absolute inset-0 -z-10 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />}
-                  <span className="absolute inset-0 -z-10 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-slate-950/5" />
-                  <span className="absolute inset-0 -z-10 bg-[#0B2D71]/10" />
-                  <span className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-                    <span className="block text-sm sm:text-base font-bold leading-tight text-white drop-shadow-sm">{cat.name}</span>
-                    <span className="mt-1 block text-[10px] sm:text-xs font-medium text-white/80">{count} {count === 1 ? 'item' : 'items'} <span aria-hidden="true">→</span></span>
-                  </span>
-                </button>
-              );
-            })}
+        ) : (
+          <div className="mb-5 max-w-sm">
+            <label htmlFor="shop-category-select" className="block text-xs font-semibold text-slate-600 mb-1.5">Browse by category</label>
+            <select
+              id="shop-category-select"
+              value={selectedCategory}
+              onChange={(e) => { setSelectedCategory(e.target.value); setSelectedSubcategory('all'); }}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 shadow-sm focus:border-[#0B2D71] focus:outline-none focus:ring-2 focus:ring-[#0B2D71]/10"
+            >
+              <option value="all">All Categories</option>
+              {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+            </select>
           </div>
-        </div>
+        )}
 
         {/* Subcategories (when a category is active) */}
         {!featuredOnly && activeCategoryObj && activeCategoryObj.subcategories.length > 0 && (
