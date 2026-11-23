@@ -347,15 +347,19 @@ app.post('/api/payments/verify', async (req, res) => {
       );
       const data = await resp.json() as {
         status?: boolean;
-        data?: { reference?: string; status?: string; amount?: string | number; amount_paid?: string | number; currency?: string };
+        data?: { reference?: string; status?: string; amount?: string | number; amount_paid?: string | number; currency?: string; transaction_status?: string };
       };
+      const expectedAmount = Number(data.data?.amount);
       const paidAmount = Number(data.data?.amount_paid ?? data.data?.amount);
       const isPaid = Boolean(
         resp.ok &&
         data.status &&
         data.data?.status === 'success' &&
+        (!data.data?.transaction_status || data.data.transaction_status === 'success') &&
+        Number.isFinite(expectedAmount) &&
         Number.isFinite(paidAmount) &&
-        paidAmount > 0
+        expectedAmount > 0 &&
+        paidAmount >= expectedAmount
       );
       res.json({
         verified: isPaid,
