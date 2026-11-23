@@ -79,7 +79,7 @@ export function CatalogSection({ onSelectProduct, featuredOnly = false, initialC
             </p>
             {featuredOnly && (
               <button type="button" onClick={() => onOpenShop?.()} className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B2D71] px-3.5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#082257] whitespace-nowrap">
-                View All Products <ArrowRight className="w-3.5 h-3.5" />
+                See More Products <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
