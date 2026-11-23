@@ -60,6 +60,8 @@ export function CatalogSection({ onSelectProduct, featuredOnly = false, initialC
   }, [products, market, selectedCategory, selectedSubcategory, pssOnly, searchQuery, sortBy, settings, featuredOnly]);
 
   const wishlistSet = new Set(userProfile?.wishlist || []);
+  // Keep the homepage curated and compact; the full catalogue remains in Shop.
+  const visibleProducts = featuredOnly ? filteredProducts.slice(0, 4) : filteredProducts;
 
   return (
     <section id="catalog" className="py-8 sm:py-10 bg-white">
@@ -75,7 +77,7 @@ export function CatalogSection({ onSelectProduct, featuredOnly = false, initialC
           </div>
           <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
             <p className="text-xs sm:text-sm text-slate-600 tabular-nums">
-              {filteredProducts.length} {featuredOnly ? 'featured products' : 'products'} · {currency} ({market === 'NG' ? 'Nigeria' : 'Australia'})
+              {featuredOnly ? `Showing ${Math.min(filteredProducts.length, 4)} of ${filteredProducts.length} featured products` : `${filteredProducts.length} products`} · {currency} ({market === 'NG' ? 'Nigeria' : 'Australia'})
             </p>
             {featuredOnly && (
               <button type="button" onClick={() => onOpenShop?.()} className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B2D71] px-3.5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#082257] whitespace-nowrap">
@@ -233,7 +235,7 @@ export function CatalogSection({ onSelectProduct, featuredOnly = false, initialC
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-            {filteredProducts.map((product) => {
+            {visibleProducts.map((product) => {
               const price = getProductPrice(product, market, settings);
               const comparePrice = getComparePrice(product, market);
               const depositPct = product.pssMinDepositPercent || settings.pssDefaultDepositPercent;

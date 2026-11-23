@@ -150,7 +150,7 @@ export function Header({ activeView, onNavigate, onOpenCart, onOpenAuth }: Heade
         <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 space-y-2">
           <button
             type="button"
-            onClick={() => handleLink('storefront', 'catalog')}
+            onClick={() => handleLink('shop')}
             className="block w-full text-left px-3 py-3 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50"
           >
             Shop All Products

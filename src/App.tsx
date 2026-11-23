@@ -55,13 +55,52 @@ function StorefrontApp() {
     }
   }, [user]);
 
+  // Keep in-app navigation in the browser history so Android/browser Back
+  // returns to the previous Samsara page instead of leaving the website.
+  useEffect(() => {
+    const initialState = window.history.state && typeof window.history.state === 'object'
+      ? window.history.state
+      : {};
+    window.history.replaceState(
+      { ...initialState, samsaraView: 'storefront', samsaraCategory: 'all' },
+      document.title
+    );
+
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state || {};
+      const nextView: ActiveView = ['storefront', 'shop', 'account', 'admin'].includes(state.samsaraView)
+        ? state.samsaraView
+        : 'storefront';
+      setActiveView(nextView);
+      setShopCategory(typeof state.samsaraCategory === 'string' ? state.samsaraCategory : 'all');
+      setSelectedProduct(null);
+      setCartOpen(false);
+      setCheckoutOpen(false);
+      setAuthOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const handleOpenShop = (categoryId = 'all') => {
+    window.history.pushState(
+      { ...(window.history.state || {}), samsaraView: 'shop', samsaraCategory: categoryId },
+      document.title,
+      window.location.href
+    );
     setShopCategory(categoryId);
     setActiveView('shop');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleNavigate = (view: ActiveView, sectionId?: string) => {
+    window.history.pushState(
+      { ...(window.history.state || {}), samsaraView: view, samsaraCategory: 'all' },
+      document.title,
+      window.location.href
+    );
     setActiveView(view);
     if (view === 'storefront' && sectionId) {
       setTimeout(() => {
