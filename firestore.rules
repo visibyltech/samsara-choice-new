@@ -278,7 +278,7 @@ service cloud.firestore {
         && data.keys().hasOnly([
           'id', 'userId', 'customerEmail', 'orderId', 'paymentPlanId', 'subscriptionId',
           'type', 'market', 'currency', 'amount', 'gateway', 'reference',
-          'status', 'verifiedBy', 'createdAt', 'updatedAt'
+          'status', 'verifiedBy', 'receiptUrl', 'receiptPublicId', 'createdAt', 'updatedAt'
         ])
         && isValidId(data.id)
         && isValidId(data.userId)
@@ -290,6 +290,8 @@ service cloud.firestore {
         && data.gateway in ['korapay', 'paystack', 'stripe', 'flutterwave', 'bank_transfer', 'payid']
         && data.reference is string && data.reference.size() >= 4 && data.reference.size() <= 160
         && data.status in ['pending_verification', 'verified', 'failed']
+        && (!('receiptUrl' in data) || (data.receiptUrl is string && data.receiptUrl.size() <= 1000))
+        && (!('receiptPublicId' in data) || (data.receiptPublicId is string && data.receiptPublicId.size() <= 300))
         && data.createdAt is timestamp
         && data.updatedAt == request.time;
     }
