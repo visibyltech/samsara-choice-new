@@ -233,6 +233,7 @@ export interface CustomerSubscription {
   renewalCount: number;
   shippingAddress?: Address;
   remindersSent?: number;
+  lastReminderAt?: string;
   createdAt?: unknown;
   updatedAt?: unknown;
 }
