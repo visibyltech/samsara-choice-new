@@ -38,6 +38,7 @@ export function CheckoutModal({
     gatewayStatus,
     validateCoupon,
     placeOrder,
+    uploadPaymentReceipt,
     resendVerification,
     showToast,
   } = useStore();
@@ -86,6 +87,7 @@ export function CheckoutModal({
   }, [open, initialPaymentMode, initialDailyPaymentAmount, initialDepositPercent, canUsePaySmallSmall, settings.pssDefaultDepositPercent]);
 
   const [manualRef, setManualRef] = useState('');
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const savedAddresses = (userProfile?.addresses || []).filter((a) => a.market === market);
@@ -162,19 +164,23 @@ export function CheckoutModal({
       showToast('Please enter a complete delivery address.', 'error');
       return;
     }
-    if (
-      (paymentMethod === 'bank_transfer' || paymentMethod === 'payid') &&
-      manualRef.trim().length < 4
-    ) {
-      showToast('Please enter your bank transfer / PayID reference ID.', 'error');
+    if (manualRef.trim().length < 4) {
+      showToast('Please enter your bank transfer transaction reference.', 'error');
+      return;
+    }
+    if (!receiptFile) {
+      showToast('Please upload your payment receipt before submitting the order.', 'error');
       return;
     }
 
     setSubmitting(true);
     try {
+      showToast('Uploading your payment receipt securely...', 'info');
+      const receiptUrl = await uploadPaymentReceipt(receiptFile);
       const result = await placeOrder({
         paymentMode: effectiveMode,
         paymentMethod,
+        receiptUrl,
         shippingAddress: activeShippingAddress,
         couponCode: appliedCoupon?.code,
         discountAmount,
@@ -482,17 +488,33 @@ export function CheckoutModal({
                   </div>
                   <p className="text-slate-600">
                     Transfer the exact amount due now (
-                    <strong className="font-mono">{formatMoney(amountDueNow, currency)}</strong>)
-                    and enter your bank transaction reference below:
+                    <strong className="font-mono">{formatMoney(amountDueNow, currency)}</strong>).
+                    Upload your transfer receipt and enter the transaction reference below. Your order will remain pending until our team verifies the payment.
                   </p>
-                  <input
-                    type="text"
-                    required
-                    value={manualRef}
-                    onChange={(e) => setManualRef(e.target.value)}
-                    placeholder="Enter your bank transfer reference"
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"
-                  />
+                  <label className="block space-y-1.5">
+                    <span className="font-semibold text-slate-700">Upload payment receipt <span className="text-red-600">*</span></span>
+                    <input
+                      type="file"
+                      required
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                      className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#0B2D71] file:px-3 file:py-2 file:font-semibold file:text-white"
+                    />
+                    <span className="block text-[11px] text-slate-500">JPG, PNG, WEBP or PDF · maximum 5 MB</span>
+                    {receiptFile && <span className="block text-[11px] font-semibold text-emerald-700">Selected: {receiptFile.name}</span>}
+                  </label>
+                  <label className="block space-y-1.5">
+                    <span className="font-semibold text-slate-700">Bank transaction reference <span className="text-red-600">*</span></span>
+                    <input
+                      type="text"
+                      required
+                      minLength={4}
+                      value={manualRef}
+                      onChange={(e) => setManualRef(e.target.value)}
+                      placeholder="Enter your bank transfer reference"
+                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"
+                    />
+                  </label>
                 </div>
               </div>
             </div>
