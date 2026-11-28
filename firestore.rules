@@ -457,7 +457,8 @@ service cloud.firestore {
           isAdmin()
           || (
             existing().userId == request.auth.uid
-            && existing().status != 'cancelled'
+            && existing().status in ['active', 'paused', 'renewal_due']
+            && incoming().status in ['active', 'paused', 'renewal_due', 'cancelled']
             && incoming().diff(existing()).affectedKeys().hasOnly(['frequency', 'items', 'pricePerCycle', 'autoRenew', 'status', 'nextDeliveryDate', 'nextRenewalDate', 'renewalCount', 'shippingAddress', 'updatedAt'])
           )
         );

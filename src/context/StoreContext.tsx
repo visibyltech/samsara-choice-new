@@ -1384,7 +1384,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await batch.commit();
-      showToast(`Subscription renewed for another ${sub.frequency} cycle.`, 'success');
+      showToast(`Renewal payment submitted. Your next cycle will update after payment confirmation.`, 'info');
       return { redirectUrl: gwResult.authorizationUrl };
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `subscriptions/${sub.id}`);

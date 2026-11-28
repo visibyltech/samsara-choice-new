@@ -390,7 +390,7 @@ export function CustomerDashboard({ onBackToStore }: CustomerDashboardProps) {
                     <div>
                       <p className="text-xs font-medium text-slate-500 capitalize">
                         {sub.frequency} Subscription · {sub.market === 'NG' ? 'Nigeria' : 'Australia'} · Status:{' '}
-                        <strong className="text-[#0B2D71] uppercase">{sub.status}</strong>
+                        <strong className="text-[#0B2D71] uppercase">{sub.status === 'pending_payment' ? 'AWAITING PAYMENT' : sub.status}</strong>
                       </p>
                       <h3 className="font-display text-lg font-bold text-slate-900 mt-0.5">
                         {sub.planName} —{' '}
@@ -402,7 +402,7 @@ export function CustomerDashboard({ onBackToStore }: CustomerDashboardProps) {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      {sub.status !== 'cancelled' && (
+                      {sub.status !== 'cancelled' && sub.status !== 'pending_payment' && (
                         <>
                           <button
                             type="button"
