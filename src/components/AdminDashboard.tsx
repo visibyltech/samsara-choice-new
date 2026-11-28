@@ -500,7 +500,7 @@ export function AdminDashboard({ onBackToStore }: AdminDashboardProps) {
                 <tbody className="divide-y divide-slate-100">
                   {paymentPlans.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                      <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
                         No Pay Small Small plans created yet.
                       </td>
                     </tr>
@@ -760,6 +760,7 @@ export function AdminDashboard({ onBackToStore }: AdminDashboardProps) {
                     <th className="px-4 py-3">Date</th>
                     <th className="px-4 py-3">Customer</th>
                     <th className="px-4 py-3">Reference</th>
+                    <th className="px-4 py-3">Receipt</th>
                     <th className="px-4 py-3">Gateway / Type</th>
                     <th className="px-4 py-3">Amount</th>
                     <th className="px-4 py-3">Status</th>
@@ -779,6 +780,7 @@ export function AdminDashboard({ onBackToStore }: AdminDashboardProps) {
                         <td className="px-4 py-3">{formatShortDate(tx.createdAt)}</td>
                         <td className="px-4 py-3">{tx.customerEmail}</td>
                         <td className="px-4 py-3 font-mono">{tx.reference}</td>
+                        <td className="px-4 py-3">{tx.receiptUrl ? <a href={tx.receiptUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#0B2D71] underline font-semibold">View receipt</a> : <span className="text-slate-400">No receipt</span>}</td>
                         <td className="px-4 py-3 uppercase">
                           {tx.gateway} · {tx.type.replace(/_/g, ' ')}
                         </td>
