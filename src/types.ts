@@ -253,6 +253,8 @@ export interface Transaction {
   reference: string;
   status: 'pending_verification' | 'verified' | 'failed';
   verifiedBy?: string;
+  receiptUrl?: string;
+  receiptPublicId?: string;
   createdAt?: unknown;
   updatedAt?: unknown;
 }
