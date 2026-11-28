@@ -227,7 +227,7 @@ export interface CustomerSubscription {
   items: SubscriptionItemEntry[];
   pricePerCycle: number;
   autoRenew: boolean;
-  status: 'active' | 'paused' | 'renewal_due' | 'cancelled';
+  status: 'pending_payment' | 'active' | 'paused' | 'renewal_due' | 'cancelled';
   nextDeliveryDate: string;
   nextRenewalDate: string;
   renewalCount: number;

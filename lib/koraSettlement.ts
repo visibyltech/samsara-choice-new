@@ -57,6 +57,31 @@ export async function settleKoraPayment(input: {
     },
   ];
 
+  if (transaction.subscriptionId) {
+    const subscriptionDocument = await getFirestoreDocument('subscriptions', String(transaction.subscriptionId));
+    if (subscriptionDocument) {
+      const subscription = decodeFields(subscriptionDocument.fields);
+      const isRenewal = String(order.orderNumber || '').startsWith('REN-');
+      const nextCycleDays = subscription.frequency === 'weekly' ? 7 : subscription.frequency === 'biweekly' ? 14 : 30;
+      const nextDelivery = new Date(Date.now() + 2 * 86_400_000);
+      const nextRenewal = new Date(Date.now() + nextCycleDays * 86_400_000);
+      updates.push({
+        document: subscriptionDocument,
+        fields: {
+          status: 'active',
+          ...(isRenewal ? {
+            renewalCount: Number(subscription.renewalCount || 1) + 1,
+            nextDeliveryDate: nextDelivery.toISOString().slice(0, 10),
+            nextRenewalDate: nextRenewal.toISOString().slice(0, 10),
+            remindersSent: 0,
+            lastReminderAt: '',
+          } : {}),
+          updatedAt: { __timestamp: now },
+        },
+      });
+    }
+  }
+
   if (transaction.paymentPlanId) {
     const planDocument = await getFirestoreDocument('paymentPlans', String(transaction.paymentPlanId));
     if (planDocument) {

@@ -1225,7 +1225,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       items: payload.items,
       pricePerCycle: payload.pricePerCycle,
       autoRenew: payload.autoRenew,
-      status: 'active',
+      status: 'pending_payment',
       nextDeliveryDate: addDaysISO(now, 2),
       nextRenewalDate: addDaysISO(now, cycleDays),
       renewalCount: 1,
@@ -1260,7 +1260,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       balanceRemaining: payload.pricePerCycle,
       shippingAddress: payload.shippingAddress,
       status: 'pending_verification',
-      fulfilmentStatus: 'eligible_for_dispatch',
+      fulfilmentStatus: 'locked_until_paid',
       subscriptionId: subId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -1302,7 +1302,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await batch.commit();
-      showToast(`Subscription "${payload.planName}" activated!`, 'success');
+      showToast(`Subscription "${payload.planName}" created. It will activate after payment confirmation.`, 'info');
       return { subscription: subDoc, redirectUrl: gwResult.authorizationUrl };
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `subscriptions/${subId}`);
@@ -1333,17 +1333,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const reference = manualRef?.trim() || `REN-${Date.now().toString().slice(-6)}`;
     const gwResult = await callPaymentGatewayInit(gateway, sub.pricePerCycle, reference, orderNumber);
 
-    const cycleDays = frequencyToDays(sub.frequency);
-    const now = new Date();
-
     const batch = writeBatch(db);
-    batch.update(doc(db, 'subscriptions', sub.id), {
-      status: 'active',
-      renewalCount: (sub.renewalCount || 1) + 1,
-      nextDeliveryDate: addDaysISO(now, 2),
-      nextRenewalDate: addDaysISO(now, cycleDays),
-      updatedAt: serverTimestamp(),
-    });
+    // Do not advance the subscription cycle until the renewal payment is verified.
     batch.set(doc(db, 'orders', orderId), {
       id: orderId,
       orderNumber,
@@ -1572,6 +1563,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           fulfilmentStatus: canDispatch ? 'eligible_for_dispatch' : 'locked_until_paid',
           updatedAt: serverTimestamp(),
         });
+      }
+
+      // Activate a new subscription or advance a renewal only after payment approval.
+      if (tx.subscriptionId) {
+        const subscriptionSnap = await getDoc(doc(db, 'subscriptions', tx.subscriptionId));
+        if (subscriptionSnap.exists()) {
+          const subscription = subscriptionSnap.data() as CustomerSubscription;
+          const linkedOrderSnap = await getDoc(doc(db, 'orders', tx.orderId));
+          const linkedOrder = linkedOrderSnap.exists() ? linkedOrderSnap.data() as Order : null;
+          const isRenewal = Boolean(linkedOrder?.orderNumber?.startsWith('REN-'));
+          const now = new Date();
+          batch.update(doc(db, 'subscriptions', tx.subscriptionId), {
+            status: 'active',
+            ...(isRenewal ? {
+              renewalCount: (subscription.renewalCount || 1) + 1,
+              nextDeliveryDate: addDaysISO(now, 2),
+              nextRenewalDate: addDaysISO(now, frequencyToDays(subscription.frequency)),
+              remindersSent: 0,
+              lastReminderAt: '',
+            } : {}),
+            updatedAt: serverTimestamp(),
+          });
+        }
       }
 
       // Update linked PaymentPlan if Pay Small Small

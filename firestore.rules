@@ -263,7 +263,7 @@ service cloud.firestore {
         && data.currency in ['NGN', 'AUD']
         && data.items is list && data.items.size() > 0 && data.items.size() <= 30
         && data.pricePerCycle is number && data.pricePerCycle >= 0
-        && data.status in ['active', 'paused', 'renewal_due', 'cancelled']
+        && data.status in ['pending_payment', 'active', 'paused', 'renewal_due', 'cancelled']
         && (!('lastReminderAt' in data) || (data.lastReminderAt is string && data.lastReminderAt.size() <= 40))
         && (!('remindersSent' in data) || (data.remindersSent is number && data.remindersSent >= 0))
         && data.createdAt is timestamp

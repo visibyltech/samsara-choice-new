@@ -40,6 +40,10 @@ export default async function handler(req: any, res: any) {
         continue;
       }
 
+      if (Number(subscription.remindersSent || 0) >= 1) {
+        skipped += 1;
+        continue;
+      }
       const lastReminder = subscription.lastReminderAt ? new Date(subscription.lastReminderAt) : null;
       if (lastReminder && !Number.isNaN(lastReminder.getTime()) && now.getTime() - lastReminder.getTime() < 20 * 60 * 60 * 1000) {
         skipped += 1;
