@@ -26,12 +26,12 @@ export default async function handler(req: any, res: any) {
   }
 
   const urls = req.body?.urls;
-  if (!Array.isArray(urls) || urls.length < 1 || urls.length > 4 ||
+  if (!Array.isArray(urls) || urls.length < 1 || urls.length > 2 ||
       urls.some((url: unknown) => typeof url !== 'string' || url.length > 1200 || (() => {
         try { const parsed = new URL(url); return parsed.protocol !== 'https:' || parsed.hostname !== 'cdn.shopify.com'; }
         catch { return true; }
       })())) {
-    return res.status(400).json({ error: 'Send 1–4 valid HTTPS Supermart Shopify product-image URLs.' });
+    return res.status(400).json({ error: 'Send 1–2 valid HTTPS Supermart Shopify product-image URLs.' });
   }
 
   const results: Array<{ sourceUrl: string; url: string; publicId: string }> = [];

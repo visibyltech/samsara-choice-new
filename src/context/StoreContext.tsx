@@ -594,7 +594,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
 
     const migratedUrls = new Map<string, string>();
-    const chunkSize = 4;
+    const chunkSize = 2;
     for (let offset = 0; offset < uniqueUrls.length; offset += chunkSize) {
       const sourceUrls = uniqueUrls.slice(offset, offset + chunkSize);
       const token = await user.getIdToken();
