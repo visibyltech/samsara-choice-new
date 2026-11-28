@@ -70,7 +70,7 @@ async function verifyFirebaseBearerToken(authHeader?: string): Promise<VerifiedF
 }
 
 function isPrimaryAdminEmail(user: VerifiedFirebaseUser | null): boolean {
-  return Boolean(user && user.emailVerified && user.email.toLowerCase() === 'usitakatelvin@gmail.com');
+  return Boolean(user && user.email.toLowerCase() === 'samsarachoice1@gmail.com');
 }
 
 // Health check
@@ -518,6 +518,76 @@ app.post('/api/cloudinary/upload', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : 'Cloudinary upload error.' });
   }
+});
+
+// Import existing Shopify-hosted catalogue images into Cloudinary (Admin only).
+// Restrict remote imports to the known Shopify CDN to prevent arbitrary URL fetching.
+app.post('/api/cloudinary/import', async (req, res) => {
+  const caller = await verifyFirebaseBearerToken(req.headers.authorization);
+  if (!isPrimaryAdminEmail(caller)) {
+    res.status(403).json({ error: 'Admin authorization required for catalogue image migration.' });
+    return;
+  }
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey || !apiSecret) {
+    res.status(503).json({ configured: false, error: 'Cloudinary credentials are not fully configured.' });
+    return;
+  }
+
+  const urls = req.body?.urls;
+  if (!Array.isArray(urls) || urls.length < 1 || urls.length > 2 ||
+      urls.some((url) => typeof url !== 'string' || url.length > 2000)) {
+    res.status(400).json({ error: 'Provide one or two valid Shopify image URLs per request.' });
+    return;
+  }
+
+  const results: Array<{ sourceUrl: string; url: string; publicId?: string }> = [];
+  const errors: Array<{ sourceUrl: string; error: string }> = [];
+  for (const sourceUrl of urls as string[]) {
+    let parsed: URL;
+    try {
+      parsed = new URL(sourceUrl);
+    } catch {
+      errors.push({ sourceUrl, error: 'Invalid image URL.' });
+      continue;
+    }
+    if (parsed.protocol !== 'https:' || parsed.hostname !== 'cdn.shopify.com' || parsed.username || parsed.password) {
+      errors.push({ sourceUrl, error: 'Only HTTPS images hosted on cdn.shopify.com can be imported.' });
+      continue;
+    }
+
+    try {
+      const timestamp = Math.floor(Date.now() / 1000);
+      const folder = 'samsara-choice/products';
+      const signaturePayload = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+      const signature = crypto.createHash('sha1').update(signaturePayload).digest('hex');
+      const form = new URLSearchParams();
+      form.append('file', sourceUrl);
+      form.append('api_key', apiKey);
+      form.append('timestamp', String(timestamp));
+      form.append('folder', folder);
+      form.append('signature', signature);
+
+      const uploadResp = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: form.toString(),
+      });
+      const uploadJson = await uploadResp.json() as { secure_url?: string; public_id?: string; error?: { message?: string } };
+      if (!uploadResp.ok || !uploadJson.secure_url) {
+        errors.push({ sourceUrl, error: uploadJson.error?.message || 'Cloudinary import failed.' });
+        continue;
+      }
+      results.push({ sourceUrl, url: uploadJson.secure_url, publicId: uploadJson.public_id });
+    } catch (err) {
+      errors.push({ sourceUrl, error: err instanceof Error ? err.message : 'Cloudinary import error.' });
+    }
+  }
+
+  res.json({ configured: true, results, errors });
 });
 
 // Automated payment / subscription renewal reminder dispatch
