@@ -561,7 +561,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
       }
       if (pending > 0) await batch.commit();
-      const addedProducts = INITIAL_PRODUCTS.length - existingProductIds.size;
+      const addedProducts = INITIAL_PRODUCTS.filter((product) => !existingProductIds.has(product.id)).length;
       showToast(
         `Catalogue sync complete: ${Math.max(0, addedProducts)} new products added; existing products and admin edits preserved.`,
         'success'
@@ -611,9 +611,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       for (const item of (result.results || []) as Array<{ sourceUrl: string; url: string }>) {
         if (item.sourceUrl && item.url) migratedUrls.set(item.sourceUrl, item.url);
       }
-      if (result.errors?.length) {
-        throw new Error(`Cloudinary migrated ${migratedUrls.size} of ${uniqueUrls.length} images before an upload error: ${result.errors[0].error || 'Unknown upload error'}`);
-      }
       onProgress?.(Math.min(offset + sourceUrls.length, uniqueUrls.length), uniqueUrls.length);
     }
 
@@ -631,7 +628,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       await batch.commit();
     }
 
-    showToast(`Cloudinary migration complete: ${migratedUrls.size} product images moved; Firebase product records updated.`, 'success');
+    const failedCount = uniqueUrls.length - migratedUrls.size;
+    if (failedCount > 0) {
+      showToast(`Cloudinary migration partially completed: ${migratedUrls.size} images moved, ${failedCount} need retrying. Successful images are saved in Firebase.`, 'error');
+    } else {
+      showToast(`Cloudinary migration complete: all ${migratedUrls.size} product images moved; Firebase product records updated.`, 'success');
+    }
     return migratedUrls.size;
   };
 

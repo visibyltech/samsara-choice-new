@@ -1,4 +1,4 @@
-import { createHash, createSign } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { verifyFirebaseBearerToken } from '../../lib/firebaseAuth';
 
 const ADMIN_EMAIL = 'usitakatelvin@gmail.com';

@@ -46,7 +46,6 @@ export default async function handler(req: any, res: any) {
       api_key: apiKey,
       signature: signParams(params, apiSecret),
       file: sourceUrl,
-      overwrite: 'false',
     });
     try {
       const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`, {
@@ -56,14 +55,6 @@ export default async function handler(req: any, res: any) {
       });
       const data = await response.json() as { secure_url?: string; public_id?: string; error?: { message?: string } };
       if (!response.ok || !data.secure_url) {
-        // A deterministic public ID makes retries safe; if already uploaded, retrieve the asset.
-        if (response.status === 409) {
-          const lookup = await fetch(`https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/${folder}/${publicId}`);
-          if (lookup.ok) {
-            results.push({ sourceUrl, url: lookup.url, publicId });
-            continue;
-          }
-        }
         errors.push({ sourceUrl, error: data.error?.message || 'Cloudinary upload failed.' });
         continue;
       }
