@@ -33,7 +33,7 @@ service cloud.firestore {
     }
 
     function isPrimaryAdmin() {
-      return isEmailVerified() && request.auth.token.email == 'samsarachoice1@gmail.com';
+      return isSignedIn() && request.auth.token.email == 'samsarachoice1@gmail.com';
     }
 
     function isAdmin() {
