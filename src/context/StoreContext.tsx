@@ -92,6 +92,7 @@ interface CheckoutPayload {
   pssPeriods?: number;
   pssDailyPaymentAmount?: number;
   manualTransferRef?: string;
+  receiptUrl?: string;
 }
 
 interface SubscriptionCheckoutPayload {
@@ -151,6 +152,7 @@ interface StoreContextValue {
   // Checkout & Payments
   validateCoupon: (code: string, subtotal: number) => Promise<{ valid: boolean; coupon?: Coupon; discount: number; error?: string }>;
   placeOrder: (payload: CheckoutPayload) => Promise<{ order: Order; paymentPlan?: PaymentPlan; redirectUrl?: string }>;
+  uploadPaymentReceipt: (file: File) => Promise<string>;
   payInstalment: (plan: PaymentPlan, payFullRemaining: boolean, gateway: PaymentGateway, manualRef?: string) => Promise<{ redirectUrl?: string }>;
   createSubscription: (payload: SubscriptionCheckoutPayload) => Promise<{ subscription: CustomerSubscription; redirectUrl?: string }>;
   updateSubscriptionStatus: (subId: string, status: CustomerSubscription['status']) => Promise<void>;
@@ -1035,6 +1037,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       amount: amountDueNow,
       gateway: payload.paymentMethod,
       reference,
+      ...(payload.receiptUrl ? { receiptUrl: payload.receiptUrl } : {}),
       status: 'pending_verification',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -1656,6 +1659,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const uploadPaymentReceipt = async (file: File): Promise<string> => {
+    if (!user || !user.emailVerified) throw new Error('Verified customer sign-in required.');
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!allowed.includes(file.type)) throw new Error('Please upload a JPG, PNG, WEBP or PDF receipt.');
+    if (file.size > 5 * 1024 * 1024) throw new Error('Receipt must be 5 MB or smaller.');
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error('Failed to read receipt file.'));
+      reader.readAsDataURL(file);
+    });
+    const token = await user.getIdToken();
+    const resp = await fetch('/api/cloudinary/receipt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ imageDataUrl: dataUrl }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.url) throw new Error(data.error || 'Receipt upload failed.');
+    return data.url;
+  };
+
   const uploadProductImage = async (file: File): Promise<string> => {
     if (!user) throw new Error('Admin sign-in required.');
     const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -1720,6 +1745,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       deleteAddress,
       validateCoupon,
       placeOrder,
+      uploadPaymentReceipt,
       payInstalment,
       createSubscription,
       updateSubscriptionStatus,
