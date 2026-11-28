@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, CreditCard, Lock, ShieldCheck, Tag, X } from 'lucide-react';
+import { CalendarClock, CreditCard, Lock, ShieldCheck, Tag, X, Building2 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Address, InstalmentFrequency, PaymentGateway, PaymentMode } from '../types';
 import {
@@ -66,12 +66,10 @@ export function CheckoutModal({
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [couponMsg, setCouponMsg] = useState('');
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentGateway>(
-    market === 'NG' ? 'korapay' : 'stripe'
-  );
+  const [paymentMethod, setPaymentMethod] = useState<PaymentGateway>('bank_transfer');
 
   useEffect(() => {
-    setPaymentMethod(market === 'NG' ? 'korapay' : 'stripe');
+    setPaymentMethod('bank_transfer');
     setPssDailyPaymentAmount(market === 'NG' ? 500 : 5);
   }, [market]);
 
@@ -459,158 +457,43 @@ export function CheckoutModal({
                 )}
               </div>
 
-              {/* 3. Payment Gateway Selection */}
+              {/* 3. Bank Transfer Only */}
               <div className="space-y-3">
                 <h3 className="text-sm font-bold text-slate-900">
-                  3. Select Payment Gateway ({currency})
+                  3. Bank Transfer ({currency})
                 </h3>
-                <div className="space-y-2">
-                  {market === 'NG' ? (
-                    <>
-                      <label className="flex items-center justify-between p-3.5 rounded-xl border border-[#0B2D71]/30 bg-blue-50/50 cursor-pointer hover:bg-blue-50">
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="gw"
-                            checked={paymentMethod === 'korapay'}
-                            onChange={() => setPaymentMethod('korapay')}
-                          />
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">Kora (Korapay) · Card &amp; Bank</p>
-                            <p className="text-xs text-slate-500">
-                              {gatewayStatus.korapayConfigured
-                                ? 'Korapay secure checkout is ready'
-                                : 'Korapay integration added · awaiting KORAPAY_SECRET_KEY'}
-                            </p>
-                          </div>
-                          <span className="ml-auto rounded-full bg-[#0B2D71] px-2 py-1 text-[10px] font-bold text-white">Recommended</span>
-                        </div>
-                      </label>
-                      <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="gw"
-                            checked={paymentMethod === 'paystack'}
-                            onChange={() => setPaymentMethod('paystack')}
-                          />
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              Paystack (Card, Bank, USSD)
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {gatewayStatus.paystackConfigured
-                                ? 'Live Paystack checkout ready'
-                                : 'Requires PAYSTACK_SECRET_KEY in Secrets (creates pending order if unset)'}
-                            </p>
-                          </div>
-                        </div>
-                      </label>
-                      <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="gw"
-                            checked={paymentMethod === 'flutterwave'}
-                            onChange={() => setPaymentMethod('flutterwave')}
-                          />
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              Flutterwave NGN Checkout
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {gatewayStatus.flutterwaveConfigured
-                                ? 'Live Flutterwave checkout ready'
-                                : 'Requires FLUTTERWAVE_SECRET_KEY in Secrets'}
-                            </p>
-                          </div>
-                        </div>
-                      </label>
-                      <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="gw"
-                            checked={paymentMethod === 'bank_transfer'}
-                            onChange={() => setPaymentMethod('bank_transfer')}
-                          />
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              Direct Nigerian Bank Transfer (NGN)
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              Transfer to Zenith Bank &amp; submit reference for Admin verification
-                            </p>
-                          </div>
-                        </div>
-                      </label>
-                    </>
-                  ) : (
-                    <>
-                      <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="gw"
-                            checked={paymentMethod === 'stripe'}
-                            onChange={() => setPaymentMethod('stripe')}
-                          />
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              Stripe (Visa, Mastercard, Apple Pay)
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {gatewayStatus.stripeConfigured
-                                ? 'Live Stripe Checkout ready'
-                                : 'Requires STRIPE_SECRET_KEY in Secrets'}
-                            </p>
-                          </div>
-                        </div>
-                      </label>
-                      <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="gw"
-                            checked={paymentMethod === 'payid'}
-                            onChange={() => setPaymentMethod('payid')}
-                          />
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              Australian PayID Instant Bank Transfer (AUD)
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              Transfer via Osko/PayID &amp; submit receipt reference for Admin verification
-                            </p>
-                          </div>
-                        </div>
-                      </label>
-                    </>
-                  )}
+                <div className="flex items-center gap-3 p-4 rounded-xl border border-[#0B2D71]/30 bg-blue-50/50">
+                  <span className="w-10 h-10 rounded-full bg-white border border-blue-100 flex items-center justify-center text-[#0B2D71]">
+                    <Building2 className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Direct Bank Transfer</p>
+                    <p className="text-xs text-slate-500">Pay by bank transfer and submit your transaction reference for confirmation.</p>
+                  </div>
+                  <span className="ml-auto text-xs font-bold text-[#0B2D71]">Only option</span>
                 </div>
 
-                {(paymentMethod === 'bank_transfer' || paymentMethod === 'payid') && (
-                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 space-y-2.5 text-xs">
-                    <p className="font-bold text-[#0B2D71]">
-                      {market === 'NG'
-                        ? 'Samsara Choice Ltd · Zenith Bank · 1228407810 (NGN)'
-                        : 'Samsara Choice Australia · PayID: pay@samsarachoice.com.au (AUD)'}
-                    </p>
-                    <p className="text-slate-600">
-                      Transfer exact amount due now (
-                      <strong className="font-mono">{formatMoney(amountDueNow, currency)}</strong>)
-                      and enter your bank transaction reference below:
-                    </p>
-                    <input
-                      type="text"
-                      required
-                      value={manualRef}
-                      onChange={(e) => setManualRef(e.target.value)}
-                      placeholder="e.g. NIP-20261123-8821 or OSKO-99124"
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"
-                    />
+                <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 space-y-2.5 text-xs">
+                  <p className="font-bold text-[#0B2D71]">Samsara Choice Ltd · Bank details</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700">
+                    <p><span className="text-slate-500">Bank name:</span> To be provided</p>
+                    <p><span className="text-slate-500">Account name:</span> To be provided</p>
+                    <p className="sm:col-span-2"><span className="text-slate-500">Account number:</span> To be provided</p>
                   </div>
-                )}
+                  <p className="text-slate-600">
+                    Transfer the exact amount due now (
+                    <strong className="font-mono">{formatMoney(amountDueNow, currency)}</strong>)
+                    and enter your bank transaction reference below:
+                  </p>
+                  <input
+                    type="text"
+                    required
+                    value={manualRef}
+                    onChange={(e) => setManualRef(e.target.value)}
+                    placeholder="Enter your bank transfer reference"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"
+                  />
+                </div>
               </div>
             </div>
 
