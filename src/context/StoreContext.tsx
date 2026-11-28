@@ -161,6 +161,7 @@ interface StoreContextValue {
 
   // Admin Operations
   syncDefaultCatalogToFirestore: () => Promise<void>;
+  migrateCatalogImagesToCloudinary: (onProgress?: (completed: number, total: number) => void) => Promise<number>;
   saveProduct: (product: Product) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
   saveCategory: (category: Category) => Promise<void>;
@@ -506,55 +507,132 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Auto-seed or full-sync Firestore catalog & settings on admin trigger
   const syncDefaultCatalogToFirestore = async () => {
-    if (!isAdmin) return;
-    const validCatIds = new Set(INITIAL_CATEGORIES.map((c) => c.id));
-    const validProdIds = new Set(INITIAL_PRODUCTS.map((p) => p.id));
+    if (!isAdmin) throw new Error('Admin authorization required to import the catalogue.');
 
-    const batch = writeBatch(db);
-    try {
-      const [existingCats, existingProds] = await Promise.all([
-        getDocs(collection(db, 'categories')),
-        getDocs(collection(db, 'products')),
-      ]);
-      for (const d of existingCats.docs) {
-        if (!validCatIds.has(d.id)) {
-          batch.delete(d.ref);
-        }
-      }
-      for (const d of existingProds.docs) {
-        if (!validProdIds.has(d.id) && !d.id.startsWith('prod-')) {
-          batch.delete(d.ref);
-        }
-      }
-    } catch {
-      // proceed with upserts if list read skipped
-    }
+    // Import is deliberately non-destructive: never delete products, categories,
+    // stock levels, or admin edits that already exist in this Firebase store.
+    const [existingCats, existingProds, existingPlans, existingCoupons, settingsSnap] = await Promise.all([
+      getDocs(collection(db, 'categories')),
+      getDocs(collection(db, 'products')),
+      getDocs(collection(db, 'subscriptionPlans')),
+      getDocs(collection(db, 'coupons')),
+      getDoc(doc(db, 'settings', 'storeConfig')),
+    ]);
+    const existingCatIds = new Set(existingCats.docs.map((d) => d.id));
+    const existingProductIds = new Set(existingProds.docs.map((d) => d.id));
+    const existingPlanIds = new Set(existingPlans.docs.map((d) => d.id));
+    const existingCouponIds = new Set(existingCoupons.docs.map((d) => d.id));
 
-    batch.set(doc(db, 'settings', 'storeConfig'), {
-      ...DEFAULT_STORE_SETTINGS,
-      updatedAt: serverTimestamp(),
-    });
+    const writes: Array<() => void> = [];
     for (const cat of INITIAL_CATEGORIES) {
-      batch.set(doc(db, 'categories', cat.id), cat);
+      if (!existingCatIds.has(cat.id)) writes.push(() => batch.set(doc(db, 'categories', cat.id), cat));
     }
     for (const prod of INITIAL_PRODUCTS) {
-      batch.set(doc(db, 'products', prod.id), {
-        ...prod,
-        updatedAt: serverTimestamp(),
-      });
+      if (!existingProductIds.has(prod.id)) {
+        writes.push(() => batch.set(doc(db, 'products', prod.id), {
+          ...prod,
+          updatedAt: serverTimestamp(),
+        }));
+      }
     }
     for (const pkg of INITIAL_SUBSCRIPTION_PACKAGES) {
-      batch.set(doc(db, 'subscriptionPlans', pkg.id), pkg);
+      if (!existingPlanIds.has(pkg.id)) writes.push(() => batch.set(doc(db, 'subscriptionPlans', pkg.id), pkg));
     }
     for (const cpn of INITIAL_COUPONS) {
-      batch.set(doc(db, 'coupons', cpn.code), cpn);
+      if (!existingCouponIds.has(cpn.code)) writes.push(() => batch.set(doc(db, 'coupons', cpn.code), cpn));
     }
+    if (!settingsSnap.exists()) {
+      writes.push(() => batch.set(doc(db, 'settings', 'storeConfig'), {
+        ...DEFAULT_STORE_SETTINGS,
+        updatedAt: serverTimestamp(),
+      }));
+    }
+
+    let batch = writeBatch(db);
+    let pending = 0;
     try {
-      await batch.commit();
-      showToast('Supermart catalog, categories, Pay Small Small settings & subscriptions synced to Firestore.', 'success');
+      for (const write of writes) {
+        write();
+        pending += 1;
+        if (pending >= 400) {
+          await batch.commit();
+          batch = writeBatch(db);
+          pending = 0;
+        }
+      }
+      if (pending > 0) await batch.commit();
+      const addedProducts = INITIAL_PRODUCTS.length - existingProductIds.size;
+      showToast(
+        `Catalogue sync complete: ${Math.max(0, addedProducts)} new products added; existing products and admin edits preserved.`,
+        'success'
+      );
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'catalog_seed');
     }
+  };
+
+  const migrateCatalogImagesToCloudinary = async (
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<number> => {
+    if (!isAdmin || !user) throw new Error('Verified store-admin sign-in required.');
+    await syncDefaultCatalogToFirestore();
+
+    const snapshot = await getDocs(collection(db, 'products'));
+    const productDocs = snapshot.docs.map((d) => ({ ...(d.data() as Product), id: d.id }));
+    const pendingProducts = productDocs.filter((product) =>
+      (product.images || []).some((url) => url.includes('cdn.shopify.com'))
+    );
+    const uniqueUrls = [...new Set(pendingProducts.flatMap((product) =>
+      (product.images || []).filter((url) => url.includes('cdn.shopify.com'))
+    ))];
+    if (uniqueUrls.length === 0) {
+      showToast('All catalogue product images are already migrated to Cloudinary.', 'success');
+      onProgress?.(0, 0);
+      return 0;
+    }
+
+    const migratedUrls = new Map<string, string>();
+    const chunkSize = 4;
+    for (let offset = 0; offset < uniqueUrls.length; offset += chunkSize) {
+      const sourceUrls = uniqueUrls.slice(offset, offset + chunkSize);
+      const token = await user.getIdToken();
+      const response = await fetch('/api/cloudinary/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ urls: sourceUrls }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Cloudinary catalogue image migration failed.');
+      }
+      for (const item of (result.results || []) as Array<{ sourceUrl: string; url: string }>) {
+        if (item.sourceUrl && item.url) migratedUrls.set(item.sourceUrl, item.url);
+      }
+      if (result.errors?.length) {
+        throw new Error(`Cloudinary migrated ${migratedUrls.size} of ${uniqueUrls.length} images before an upload error: ${result.errors[0].error || 'Unknown upload error'}`);
+      }
+      onProgress?.(Math.min(offset + sourceUrls.length, uniqueUrls.length), uniqueUrls.length);
+    }
+
+    const productsToUpdate = pendingProducts.filter((product) =>
+      (product.images || []).some((url) => migratedUrls.has(url))
+    );
+    for (let offset = 0; offset < productsToUpdate.length; offset += 400) {
+      const batch = writeBatch(db);
+      for (const product of productsToUpdate.slice(offset, offset + 400)) {
+        batch.update(doc(db, 'products', product.id), {
+          images: product.images.map((url) => migratedUrls.get(url) || url),
+          updatedAt: serverTimestamp(),
+        });
+      }
+      await batch.commit();
+    }
+
+    showToast(`Cloudinary migration complete: ${migratedUrls.size} product images moved; Firebase product records updated.`, 'success');
+    return migratedUrls.size;
   };
 
   useEffect(() => {
@@ -1635,6 +1713,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       sendReminder,
       markNotificationRead,
       syncDefaultCatalogToFirestore,
+      migrateCatalogImagesToCloudinary,
       saveProduct,
       deleteProduct,
       saveCategory,

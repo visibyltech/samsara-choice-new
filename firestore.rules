@@ -285,7 +285,7 @@ service cloud.firestore {
         && data.market in ['NG', 'AU']
         && data.currency in ['NGN', 'AUD']
         && data.amount is number && data.amount > 0
-        && data.gateway in ['paystack', 'stripe', 'flutterwave', 'bank_transfer', 'payid']
+        && data.gateway in ['korapay', 'paystack', 'stripe', 'flutterwave', 'bank_transfer', 'payid']
         && data.reference is string && data.reference.size() >= 4 && data.reference.size() <= 160
         && data.status in ['pending_verification', 'verified', 'failed']
         && data.createdAt is timestamp

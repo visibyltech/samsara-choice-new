@@ -57,6 +57,7 @@ export function AdminDashboard({ onBackToStore }: AdminDashboardProps) {
     notifications,
     gatewayStatus,
     syncDefaultCatalogToFirestore,
+    migrateCatalogImagesToCloudinary,
     saveProduct,
     deleteProduct,
     saveStoreSettings,
@@ -74,6 +75,8 @@ export function AdminDashboard({ onBackToStore }: AdminDashboardProps) {
   const [tab, setTab] = useState<AdminTab>('overview');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [migratingImages, setMigratingImages] = useState(false);
+  const [imageMigrationProgress, setImageMigrationProgress] = useState({ completed: 0, total: 0 });
 
   const [settingsForm, setSettingsForm] = useState<StoreSettings>(settings);
   const [newCoupon, setNewCoupon] = useState<Coupon>({
@@ -231,10 +234,37 @@ export function AdminDashboard({ onBackToStore }: AdminDashboardProps) {
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
-              onClick={syncDefaultCatalogToFirestore}
+              onClick={async () => {
+                try {
+                  await syncDefaultCatalogToFirestore();
+                } catch (error) {
+                  showToast(error instanceof Error ? error.message : 'Catalogue import failed.', 'error');
+                }
+              }}
               className="px-4 py-2 bg-white/15 hover:bg-white/25 text-white text-xs font-semibold rounded-lg"
             >
-              Sync Catalog to Firestore
+              Import 81 Catalogue Products
+            </button>
+            <button
+              type="button"
+              disabled={migratingImages || !gatewayStatus.cloudinaryConfigured}
+              onClick={async () => {
+                setMigratingImages(true);
+                setImageMigrationProgress({ completed: 0, total: 0 });
+                try {
+                  await migrateCatalogImagesToCloudinary((completed, total) => setImageMigrationProgress({ completed, total }));
+                } catch (error) {
+                  showToast(error instanceof Error ? error.message : 'Cloudinary image migration failed.', 'error');
+                } finally {
+                  setMigratingImages(false);
+                }
+              }}
+              className="px-4 py-2 bg-white/15 hover:bg-white/25 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg"
+              title={!gatewayStatus.cloudinaryConfigured ? 'Configure Cloudinary credentials in Vercel first' : 'Move imported Supermart images into Cloudinary'}
+            >
+              {migratingImages
+                ? `Migrating Images ${imageMigrationProgress.completed}/${imageMigrationProgress.total}`
+                : 'Migrate Images to Cloudinary'}
             </button>
             <button
               type="button"
@@ -1064,6 +1094,7 @@ export function AdminDashboard({ onBackToStore }: AdminDashboardProps) {
               </p>
               <div className="space-y-2 pt-2">
                 {[
+                  { label: 'KoraPay (Nigeria NGN)', ok: gatewayStatus.korapayConfigured },
                   { label: 'Paystack (Nigeria NGN)', ok: gatewayStatus.paystackConfigured },
                   { label: 'Flutterwave (Nigeria NGN)', ok: gatewayStatus.flutterwaveConfigured },
                   { label: 'Stripe (Australia AUD)', ok: gatewayStatus.stripeConfigured },
