@@ -43,9 +43,14 @@ function StorefrontApp() {
         })
           .then((r) => r.json())
           .then((data) => {
-            if (data.verified) {
-              showToast(`Payment ${ref} verified! Check your account dashboard.`, 'success');
+            if (data.verified && data.settled) {
+              showToast(`Payment ${ref} confirmed and your order ledger updated.`, 'success');
               setActiveView('account');
+            } else if (data.verified && data.settlementPending) {
+              showToast('Kora confirmed your payment, but the order ledger still needs server configuration or retry. Please contact the store.', 'info');
+              setActiveView('account');
+            } else if (data.error) {
+              showToast(data.error, 'error');
             }
           })
           .catch(() => {});

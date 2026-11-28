@@ -36,8 +36,39 @@ export default async function handler(req: any, res: any) {
         expectedAmount > 0 &&
         amount >= expectedAmount
       );
+      if (verified) {
+        try {
+          const { settleKoraPayment } = await import('../../lib/koraSettlement');
+          const settlement = await settleKoraPayment({
+            reference: payload.data?.reference || reference,
+            amount,
+            currency: String(payload.data?.currency || ''),
+          });
+          return res.status(200).json({
+            verified: true,
+            settled: true,
+            gateway,
+            reference: payload.data?.reference || reference,
+            amount,
+            currency: payload.data?.currency,
+            alreadyProcessed: settlement.alreadyProcessed,
+          });
+        } catch (settlementError) {
+          return res.status(200).json({
+            verified: true,
+            settled: false,
+            gateway,
+            reference: payload.data?.reference || reference,
+            amount,
+            currency: payload.data?.currency,
+            settlementPending: true,
+            message: settlementError instanceof Error ? settlementError.message : 'Payment confirmed; order update is pending.',
+          });
+        }
+      }
       return res.status(200).json({
-        verified,
+        verified: false,
+        settled: false,
         gateway,
         reference: payload.data?.reference || reference,
         amount: Number.isFinite(amount) ? amount : undefined,
