@@ -4,6 +4,8 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   return res.status(200).json({
+    firebaseAdminConfigured: Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON),
+    subscriptionCronConfigured: Boolean(process.env.CRON_SECRET),
     korapayConfigured: Boolean(process.env.KORAPAY_SECRET_KEY),
     paystackConfigured: Boolean(process.env.PAYSTACK_SECRET_KEY),
     paystackPublicKey: process.env.PAYSTACK_PUBLIC_KEY || '',

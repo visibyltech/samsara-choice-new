@@ -135,6 +135,44 @@ export async function findFirestoreDocument(collection: string, fieldPath: strin
   return payload.find((item) => item.document)?.document || null;
 }
 
+export async function queryFirestoreDocuments(
+  collection: string,
+  fieldPath: string,
+  value: FirestoreValue,
+  limit = 200
+): Promise<FirestoreDocument[]> {
+  const payload = await firestoreRequest(':runQuery', {
+    method: 'POST',
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: collection }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath },
+            op: 'EQUAL',
+            value: toValue(value),
+          },
+        },
+        limit,
+      },
+    }),
+  }) as Array<{ document?: FirestoreDocument }>;
+  return payload.flatMap((item) => item.document ? [item.document] : []);
+}
+
+export async function createFirestoreDocument(
+  collection: string,
+  id: string,
+  fields: Record<string, FirestoreValue>
+): Promise<void> {
+  await firestoreRequest(`/${encodeURIComponent(collection)}?documentId=${encodeURIComponent(id)}`, {
+    method: 'POST',
+    body: JSON.stringify({
+      fields: Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, toValue(value)])),
+    }),
+  });
+}
+
 export async function commitFirestoreUpdates(
   updates: Array<{ document: FirestoreDocument; fields: Record<string, FirestoreValue> }>
 ): Promise<void> {

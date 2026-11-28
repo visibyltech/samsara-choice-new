@@ -208,6 +208,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [gatewayStatus, setGatewayStatus] = useState<GatewayConfigStatus>({
+    firebaseAdminConfigured: false,
+    subscriptionCronConfigured: false,
     korapayConfigured: false,
     paystackConfigured: false,
     paystackPublicKey: '',

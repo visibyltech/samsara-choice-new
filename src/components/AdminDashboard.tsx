@@ -1089,11 +1089,13 @@ export function AdminDashboard({ onBackToStore }: AdminDashboardProps) {
                 Gateway &amp; Integration Environment
               </h3>
               <p className="text-slate-500">
-                Configure API secret keys in AI Studio Settings -&gt; Secrets. Secrets are never
-                exposed in client bundles.
+                Configure server credentials in Vercel Project Settings -&gt; Environment Variables.
+                Secret values stay server-side and are never exposed in the storefront.
               </p>
               <div className="space-y-2 pt-2">
                 {[
+                  { label: 'Firebase server-side settlement', ok: gatewayStatus.firebaseAdminConfigured },
+                  { label: 'Scheduled subscription reminders', ok: gatewayStatus.subscriptionCronConfigured },
                   { label: 'KoraPay (Nigeria NGN)', ok: gatewayStatus.korapayConfigured },
                   { label: 'Paystack (Nigeria NGN)', ok: gatewayStatus.paystackConfigured },
                   { label: 'Flutterwave (Nigeria NGN)', ok: gatewayStatus.flutterwaveConfigured },

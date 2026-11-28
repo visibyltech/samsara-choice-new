@@ -269,6 +269,8 @@ export interface AppNotification {
 }
 
 export interface GatewayConfigStatus {
+  firebaseAdminConfigured: boolean;
+  subscriptionCronConfigured: boolean;
   korapayConfigured: boolean;
   paystackConfigured: boolean;
   paystackPublicKey: string;
