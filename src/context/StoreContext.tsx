@@ -69,7 +69,7 @@ import {
   getProductPrice,
 } from '../utils/currency';
 
-const PRIMARY_ADMIN_EMAIL = 'usitakatelvin@gmail.com';
+const PRIMARY_ADMIN_EMAIL = 'samsarachoice1@gmail.com';
 
 function sanitizeId(raw: string): string {
   return raw.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 120);
@@ -243,8 +243,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const currency = getCurrencyForMarket(market);
   const isAdmin = Boolean(
-    user?.emailVerified &&
-      (user.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL || isAdminDoc)
+    user && (user.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL || (user.emailVerified && isAdminDoc))
   );
 
   // Fetch public gateway status from Express backend
