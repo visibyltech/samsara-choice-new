@@ -642,13 +642,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isAdmin || seededChecked) return;
     setSeededChecked(true);
-    getDocs(collection(db, 'products'))
-      .then((snap) => {
-        if (snap.empty) {
-          syncDefaultCatalogToFirestore();
-        }
-      })
-      .catch(() => {});
+    // Safe, non-destructive import on the first verified admin session:
+    // missing catalogue products are added; existing product edits are preserved.
+    syncDefaultCatalogToFirestore().catch((error) => {
+      showToast(error instanceof Error ? error.message : 'Catalogue sync failed. Retry from Admin.', 'error');
+    });
   }, [isAdmin, seededChecked]);
 
   const setMarket = async (next: Market) => {
