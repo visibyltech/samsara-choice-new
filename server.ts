@@ -590,6 +590,54 @@ app.post('/api/cloudinary/import', async (req, res) => {
   res.json({ configured: true, results, errors });
 });
 
+// Customer payment receipt upload. Files are stored privately in the Samsara Choice Cloudinary folder.
+app.post('/api/cloudinary/receipt', async (req, res) => {
+  const caller = await verifyFirebaseBearerToken(req.headers.authorization);
+  if (!caller || !caller.emailVerified) {
+    res.status(401).json({ error: 'Verified sign-in required to upload a payment receipt.' });
+    return;
+  }
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey || !apiSecret) {
+    res.status(503).json({ error: 'Receipt storage is not configured.' });
+    return;
+  }
+  const { imageDataUrl } = req.body || {};
+  if (typeof imageDataUrl !== 'string' || !/^data:(image\/(jpeg|png|webp)|application\/pdf);base64,/.test(imageDataUrl) || imageDataUrl.length > 7_000_000) {
+    res.status(400).json({ error: 'Upload a JPG, PNG, WEBP or PDF receipt up to 5 MB.' });
+    return;
+  }
+  try {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const folder = 'samsara-choice/payment-receipts';
+    const signaturePayload = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+    const signature = crypto.createHash('sha1').update(signaturePayload).digest('hex');
+    const form = new URLSearchParams();
+    form.append('file', imageDataUrl);
+    form.append('api_key', apiKey);
+    form.append('timestamp', String(timestamp));
+    form.append('folder', folder);
+    form.append('signature', signature);
+    const isPdf = imageDataUrl.startsWith('data:application/pdf;');
+    const resourceType = isPdf ? 'raw' : 'image';
+    const uploadResp = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/${resourceType}/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form.toString(),
+    });
+    const uploadJson = await uploadResp.json() as { secure_url?: string; public_id?: string; error?: { message?: string } };
+    if (!uploadResp.ok || !uploadJson.secure_url) {
+      res.status(502).json({ error: uploadJson.error?.message || 'Receipt upload failed.' });
+      return;
+    }
+    res.json({ url: uploadJson.secure_url, publicId: uploadJson.public_id });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Receipt upload error.' });
+  }
+});
+
 // Automated payment / subscription renewal reminder dispatch
 app.post('/api/reminders/send', async (req, res) => {
   const caller = await verifyFirebaseBearerToken(req.headers.authorization);
